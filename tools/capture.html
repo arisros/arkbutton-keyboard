@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<style>html,body{margin:0;background:#f7f3e3}#c{display:block}</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+// spec passed via ?spec=<urlencoded json>: { parts:[{file,color,opacity}], W,H }
+const spec = JSON.parse(decodeURIComponent(new URLSearchParams(location.search).get('spec') || '{}'));
+const W = spec.W || 1000, H = spec.H || 750;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf7f3e3);
+const renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); renderer.setPixelRatio(1);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556, 1.15));
+const d1 = new THREE.DirectionalLight(0xffffff, .85); d1.position.set(1, -1.5, 2); scene.add(d1);
+const d2 = new THREE.DirectionalLight(0xffffff, .45); d2.position.set(-2, 1, 1); scene.add(d2);
+
+const root = new THREE.Group(); scene.add(root); // case STL frame is Z-up already
+const loader = new STLLoader();
+const COLORS = { gray: 0x9aa0a8, orange: 0xff7a1a, green: 0x3fb15a, blue: 0x3a78d0, yellow: 0xe8c020 };
+
+function load(file, colorName, opacity) {
+  return new Promise((res, rej) => loader.load(file, g => {
+    g.computeVertexNormals();
+    const m = new THREE.MeshStandardMaterial({
+      color: COLORS[colorName] ?? 0x9aa0a8, metalness: .1, roughness: .75,
+      transparent: opacity != null && opacity < 1, opacity: opacity ?? 1,
+    });
+    root.add(new THREE.Mesh(g, m)); res();
+  }, undefined, rej));
+}
+
+const bb = new THREE.Box3(), ctr = new THREE.Vector3(), size = new THREE.Vector3();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5000, 5000);
+camera.up.set(0, 0, 1);
+
+// view dir + the two in-plane half-extents (axes perpendicular to the view)
+function frustum(view) {
+  const [sx, sy, sz] = [size.x, size.y, size.z];
+  const D = Math.max(sx, sy, sz) * 1.3;
+  const V = {
+    top:   { dir: [0, 0, 1],    w: sx, h: sy },
+    bottom:{ dir: [0, 0, -1],   w: sx, h: sy },
+    front: { dir: [0, -1, 0],   w: sx, h: sz },
+    back:  { dir: [0, 1, 0],    w: sx, h: sz },
+    right: { dir: [1, 0, 0],    w: sy, h: sz },
+    left:  { dir: [-1, 0, 0],   w: sy, h: sz },
+    iso:   { dir: [1, -1, 0.85], w: D, h: D },
+    iso2:  { dir: [-1, -1, 0.85], w: D, h: D },
+  }[view];
+  return { ...V, D };
+}
+
+window.renderView = (view, focus) => new Promise(r => {
+  const f = frustum(view);
+  const m = 1.12;
+  let halfW = (f.w / 2) * m, halfH = (f.h / 2) * m, center = ctr.clone(), dist = Math.max(size.x, size.y, size.z) * 3 + 50;
+  if (focus) { center = new THREE.Vector3(...focus.center); halfW = halfH = focus.r * m; }
+  const aspect = W / H;
+  // fit both: expand the smaller axis so the model isn't clipped
+  if (halfW / halfH > aspect) halfH = halfW / aspect; else halfW = halfH * aspect;
+  camera.left = -halfW; camera.right = halfW; camera.top = halfH; camera.bottom = -halfH;
+  const dir = new THREE.Vector3(...f.dir).normalize();
+  camera.position.copy(center).addScaledVector(dir, dist);
+  camera.up.set(0, 0, view === 'top' || view === 'bottom' ? 1 : 1); // Z-up; top uses Y-up feel
+  if (view === 'top' || view === 'bottom') camera.up.set(0, 1, 0);
+  camera.lookAt(center); camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
+  requestAnimationFrame(() => requestAnimationFrame(() => r(c.toDataURL('image/png'))));
+});
+
+(async () => {
+  for (const p of (spec.parts || [])) await load(p.file, p.color, p.opacity);
+  bb.setFromObject(root); bb.getCenter(ctr); bb.getSize(size);
+  window.__ready = true;
+  window.__bbox = { min: bb.min.toArray(), max: bb.max.toArray() };
+})().catch(e => { window.__error = String(e); });
+</script></body></html>

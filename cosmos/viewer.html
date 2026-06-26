@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dactyl Tenting Stand — Viewer</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b1d22;color:#e8e8e8;font:14px system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0}
+  #panel{position:fixed;top:12px;left:12px;background:#262a31cc;padding:14px 16px;border-radius:10px;backdrop-filter:blur(4px);width:290px}
+  #panel h1{font-size:14px;margin:0 0 8px}
+  .row{margin:10px 0}
+  label{display:block;font-size:12px;opacity:.8;margin-bottom:4px}
+  input[type=range]{width:100%}
+  .val{float:right;opacity:.95;font-variant-numeric:tabular-nums}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.9}
+  #hint{margin-top:10px;font-size:11px;opacity:.6;line-height:1.5}
+  #status{position:fixed;bottom:10px;left:12px;font-size:11px;opacity:.5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>🎹 Dactyl Tenting Stand</h1>
+  <div class="row">
+    <label>Tent (0 = flat) <span class="val" id="av">lock #4</span></label>
+    <input type="range" id="slot" min="0" max="9" value="3" step="1">
+  </div>
+  <div class="row chk"><input type="checkbox" id="showcase" checked><label style="margin:0">Show case (body)</label></div>
+  <div class="row chk"><input type="checkbox" id="showhousing" checked><label style="margin:0">Show I/O block (wall panel + holder)</label></div>
+  <div class="row chk"><input type="checkbox" id="showcover" checked><label style="margin:0">Show bottom cover (orange)</label></div>
+  <div class="row chk"><input type="checkbox" id="showprop" checked><label style="margin:0">Show prop (static leg)</label></div>
+  <div class="row chk"><input type="checkbox" id="showdesk" checked><label style="margin:0">Show desk + grid</label></div>
+  <div id="hint">
+    Axes: <b style="color:#e05">X red</b> · <b style="color:#3c3">Y green</b> · <b style="color:#39f">Z blue</b>.<br>
+    Leg length is <b>fixed</b>; the chosen lock slot sets the tent angle.
+  </div>
+</div>
+<div id="status">loading…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader }     from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---- geometry (must match tent_stand.scad) ----
+const HINGE_X = 83;     // side hinge (moved out to real pinky edge ~85)
+const TB = 8.5, TC = 3; // base 8.5 mm (top 4 mm = fold pocket), cover 3 mm — must match tent_stand.scad
+const PIVOT_X = 10;     // "engsel tengah" (top pivot) on the cover
+const LEG_LEN = 75;     // STATIC leg length
+const FOOT_H = 3;
+const SLOT_TOP = TB - 4;     // = 4.5 — slot/foot engagement level (fold-pocket floor)
+const PIVZ_OFF = 2.0;   // pivot axis below the cover bottom (captive clevis) — must match tent_stand.scad
+const LEG_Y_OFF = 24;   // Y-centre of the leg mechanism (leg+lug+slots) — must match tent_stand.scad LEG_Y
+const DEG = Math.PI/180;
+// 10 lock slots spaced evenly in X (must match tent_stand.scad)
+const SLOT_XS = Array.from({length:9},(_,i)=>-62 + i*8);   // n_slots=9, pitch=8 (must match tent_stand.scad)
+// solve cover angle so the fixed leg foot seats in slot X (binary search, radians)
+function dd(){ return HINGE_X - PIVOT_X; }
+function pivxA(th){ return HINGE_X - dd()*Math.cos(th) - PIVZ_OFF*Math.sin(th); }
+function pivzA(th){ return TB + dd()*Math.sin(th) - PIVZ_OFF*Math.cos(th); }
+function errA(th,X){ return Math.pow(pivxA(th)-X,2)+Math.pow(pivzA(th)-SLOT_TOP,2)-LEG_LEN*LEG_LEN; }
+function solveAngle(X){ let lo=DEG, hi=60*DEG; for(let n=0;n<44;n++){const m=(lo+hi)/2; if(errA(m,X)<0)lo=m; else hi=m;} return (lo+hi)/2; }
+
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x1b1d22);
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,1,6000);
+camera.up.set(0,0,1); camera.position.set(240,-300,200);
+const renderer=new THREE.WebGLRenderer({canvas:c,antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(devicePixelRatio);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,0,25); controls.update();
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x333740,1.1));
+const dl=new THREE.DirectionalLight(0xffffff,1.3); dl.position.set(120,-160,220); scene.add(dl);
+const dl2=new THREE.DirectionalLight(0xffffff,.5); dl2.position.set(-160,120,80); scene.add(dl2);
+const desk=new THREE.Group();
+// solid desk surface (large, so the grid always sits fully ON it — no disconnect)
+const deskPlane=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),new THREE.MeshStandardMaterial({color:0x2b2f36,roughness:.95,metalness:0}));
+deskPlane.position.z=-0.2; desk.add(deskPlane);
+const grid=new THREE.GridHelper(720,36,0x556,0x3a3f48); grid.rotation.x=Math.PI/2; grid.position.z=0.02; desk.add(grid);
+desk.position.set(0,0,0);   // grid FIXED at the world origin (the desk doesn't move; the keyboard is placed on it)
+scene.add(desk);
+scene.add(new THREE.AxesHelper(150));   // X red, Y green, Z blue
+
+// shift the whole assembly (base + hinge/pivot + prop) onto the grid centre
+// The grid (desk) is FIXED at the world origin below. Centre the KEY CLUSTER on the origin (the
+// footprint centre is skewed by the hinge lip + the leg, so we use the mean of the home-key
+// positions = the real visual centre of the keyboard). measured key centroid = (18.1, 23.6).
+const KEY_CX=18.1, KEY_CY=23.6, PLACE_X=0, PLACE_Y=0;
+const WX=-KEY_CX+PLACE_X, WY=-KEY_CY+PLACE_Y;   // keys sit on the origin; nudge via PLACE_X/PLACE_Y
+const PROP_Y=0;        // prop leg uses the real base/cover Y (WY); no offset hack — foot lands in the actual slot
+// base | topGroup(hinge,rotY) -> inner(-HINGE_X) -> coverHolder(+TB) -> [cover | keyboard@+TC | pivot]
+const baseG=new THREE.Group(); baseG.position.set(WX,WY,0); scene.add(baseG);
+const topGroup=new THREE.Group(); topGroup.position.set(HINGE_X+WX,WY,TB); scene.add(topGroup);
+const inner=new THREE.Group(); inner.position.set(-HINGE_X,0,0); topGroup.add(inner);
+// topGroup already sits AT the hinge axis (z=TB) and is the rotation pivot, so the cover mesh
+// (whose own hinge knuckles are at native z=0) attaches here with NO extra z — else it double-lifts.
+const coverHolder=new THREE.Group(); coverHolder.position.set(0,0,0); inner.add(coverHolder);
+const coverG=new THREE.Group(); coverHolder.add(coverG);   // cover mesh only (toggleable independently)
+// case sits flush on the cover: case_main's bottom rim (native z≈3) lands on the cover top, so no extra lift
+const keyboard=new THREE.Group(); keyboard.position.set(0,0,0); coverHolder.add(keyboard);
+const caseG=new THREE.Group(); keyboard.add(caseG);   // case body only (toggleable)
+const pivot=new THREE.Object3D(); pivot.position.set(PIVOT_X,LEG_Y_OFF,-PIVZ_OFF); coverHolder.add(pivot);
+
+const matKB =new THREE.MeshStandardMaterial({color:0x9aa0a8,metalness:.1,roughness:.85});
+const matCov=new THREE.MeshStandardMaterial({color:0x2a9d8f,metalness:.2,roughness:.55});
+const matBas=new THREE.MeshStandardMaterial({color:0x565b63,metalness:.2,roughness:.7});
+const matProp=new THREE.MeshStandardMaterial({color:0x5b8bd0,metalness:.35,roughness:.5});
+// static leg = wide flat strut: length(local X = LEG_LEN) × 60 wide (Y) × 3 thick (Z, nests in pocket)
+const prop=new THREE.Mesh(new THREE.BoxGeometry(1,60,3),matProp); scene.add(prop);
+// foot tab at the −X (foot) end, drops into the lock slot — shows the lock engaging
+const footTab=new THREE.Mesh(new THREE.BoxGeometry(2.2,60,3.2),new THREE.MeshStandardMaterial({color:0x3f6cae,metalness:.35,roughness:.5}));
+scene.add(footTab);
+
+// PIVOT hinge (visible): a Ø2 BRASS ROD threaded through interleaved knuckles — cover knuckles
+// (teal) + leg knuckles (blue) alternating, pinned by the rod (captive: blind end + press-grip).
+// All sit at the pivot centre so they ride with the cover (attached to `pivot`); must match tent_stand.scad.
+const PK_ROD=2.0, PK_KNK=3.8, N_PK=5, PROP_W=60, PK_SEG=PROP_W/N_PK, PK_AXGAP=0.8;
+const matAxle=new THREE.MeshStandardMaterial({color:0xc9a84a,metalness:.85,roughness:.3});  // brass rod
+const axle=new THREE.Mesh(new THREE.CylinderGeometry(PK_ROD/2,PK_ROD/2,PROP_W+6,20),matAxle); pivot.add(axle);
+for(let i=0;i<N_PK;i++){
+  const knk=new THREE.Mesh(new THREE.CylinderGeometry(PK_KNK/2,PK_KNK/2,PK_SEG-PK_AXGAP,22), i%2?matProp:matCov);
+  knk.position.y=-PROP_W/2+PK_SEG/2+i*PK_SEG; pivot.add(knk);   // CylinderGeometry is along Y = the pivot axis
+}
+// MAIN pinky hinge — the SAME Ø2 brass rod, fixed to the base (cover rotates on it). Captive: blind
+// end + press-grip, same as the pivot. Lives on baseG so it stays put as the cover tilts.
+const HINGE_Y0=-8, HINGE_Y1=76;
+const hingeRod=new THREE.Mesh(new THREE.CylinderGeometry(PK_ROD/2,PK_ROD/2,HINGE_Y1-HINGE_Y0+8,20),matAxle);
+hingeRod.position.set(HINGE_X,(HINGE_Y0+HINGE_Y1)/2,TB); baseG.add(hingeRod);
+
+const matHold=new THREE.MeshStandardMaterial({color:0xff6b35,metalness:.2,roughness:.55}); // MCU/TRRS holder
+const holderG=new THREE.Group(); keyboard.add(holderG);   // separate part, sits on the cover
+const loader=new STLLoader(); let pending=4; const status=document.getElementById('status');
+const done=()=>{ if(--pending<=0){status.textContent='ready · drag to rotate'; window.__ready=true;} else status.textContent='loading… '+pending+' left'; };
+const load=(u,p,m)=>loader.load(u,g=>{g.computeVertexNormals();p.add(new THREE.Mesh(g,m));done();},
+  undefined,e=>{status.textContent='ERR '+u+' — run a local web server';console.error(e);});
+load('stand_bottom.stl', baseG,       matBas);
+load('stand_top.stl',    coverG, matCov);
+load('case_main.stl', caseG, matKB);                    // bowl @ 42mm with clean coakan window
+load('block.stl', holderG, matHold);                    // ORANGE = swappable I/O block (panel+holder+reset, one watertight part)
+
+// ---- finger/thumb labels (so we can point at regions precisely) ----
+const LABEL_COLORS={thumb:'#ffd24d',index:'#4dd2ff',middle:'#6bff6b',ring:'#ff6bff',pinky:'#ff8a3d'};
+function makeLabel(text,color){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=72;
+  const x=cv.getContext('2d');
+  x.fillStyle='rgba(15,17,22,0.78)'; x.fillRect(0,0,256,72);
+  x.strokeStyle=color; x.lineWidth=4; x.strokeRect(2,2,252,68);
+  x.font='bold 38px system-ui,sans-serif'; x.fillStyle=color; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText(text,128,38);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false,depthWrite:false}));
+  s.scale.set(24,6.75,1); s.renderOrder=999; return s;
+}
+const labelsG=new THREE.Group(); keyboard.add(labelsG);   // toggleable / hidden in headless capture
+fetch('labels.json').then(r=>r.json()).then(labels=>{
+  for(const l of labels){
+    const s=makeLabel(l.home.toUpperCase(), LABEL_COLORS[l.home]||'#fff');
+    s.position.set(l.pos[0], l.pos[1], l.pos[2]+20);
+    labelsG.add(s);
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(2.2,12,12), new THREE.MeshBasicMaterial({color:LABEL_COLORS[l.home]||'#fff'}));
+    dot.position.set(l.pos[0], l.pos[1], l.pos[2]+6); labelsG.add(dot);
+  }
+}).catch(e=>console.error('labels',e));
+
+const sEl=document.getElementById('slot'), avEl=document.getElementById('av');
+const v1=new THREE.Vector3(), foot=new THREE.Vector3(), dir=new THREE.Vector3(), xA=new THREE.Vector3(1,0,0);
+function update(){
+  const v=+sEl.value;                 // 0 = FLAT, 1..10 = lock slot
+  const flat = v===0;
+  const X = flat ? null : SLOT_XS[v-1];
+  const th = flat ? 0 : solveAngle(X);
+  avEl.textContent = flat ? 'FLAT · 0°' : ('lock #'+v+' · '+Math.round(th/DEG)+'°');
+  topGroup.rotation.y=th;
+  caseG.visible=showcase.checked; holderG.visible=showhousing.checked; coverG.visible=showcover.checked;
+  prop.visible=showprop.checked; desk.visible=showdesk.checked;
+  topGroup.updateMatrixWorld(true);
+  pivot.getWorldPosition(v1); v1.y+=PROP_Y;   // shift prop top end north with the foot
+  // FLAT: leg nests flat in the base-top fold pocket; else: foot seats INTO the slot groove
+  // (leg mechanism is centred at LEG_Y on the base, so its foot rides at WY+LEG_Y_OFF)
+  if(flat) foot.set(PIVOT_X-LEG_LEN+WX,WY+LEG_Y_OFF,TB-PIVZ_OFF);
+  else     foot.set(X+WX,WY+LEG_Y_OFF,SLOT_TOP-FOOT_H/2);
+  dir.subVectors(v1,foot); const len=dir.length(); dir.normalize();
+  prop.position.copy(v1).add(foot).multiplyScalar(0.5);
+  prop.quaternion.setFromUnitVectors(xA,dir);
+  prop.scale.x=len;
+  footTab.position.copy(foot); footTab.visible=!flat && showprop.checked;
+}
+[sEl,showcase,showhousing,showcover,showprop,showdesk].forEach(e=>e.addEventListener('input',update));
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+// headless capture hook: set slot + camera, render, return PNG dataURL
+window.__cap=({slot=4,eye=[250,-300,210],target=[0,10,25],size=[1100,800],labels=false}={})=>new Promise(res=>{
+  if(size){renderer.setSize(size[0],size[1]);camera.aspect=size[0]/size[1];camera.updateProjectionMatrix();}
+  sEl.value=slot; update(); labelsG.visible=labels;
+  camera.position.set(...eye); controls.target.set(...target); controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>res(c.toDataURL('image/png'))));
+});
+(function loop(){requestAnimationFrame(loop);update();controls.update();renderer.render(scene,camera);})();
+</script>
+</body>
+</html>

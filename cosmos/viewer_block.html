@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>I/O Block preview — bowl + potongan + plate</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b1d22;color:#ddd;font:13px/1.4 system-ui,sans-serif;overflow:hidden}
+  #ui{position:fixed;top:10px;left:10px;z-index:10;background:#0008;padding:10px 12px;border-radius:8px;backdrop-filter:blur(4px)}
+  #ui label{display:block;margin:6px 0 2px}
+  #ui .row{display:flex;gap:8px;align-items:center}
+  input[type=range]{width:170px}
+  .chip{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  button{background:#333;color:#eee;border:1px solid #555;border-radius:5px;padding:3px 8px;cursor:pointer;margin-top:8px}
+  #stat{position:fixed;bottom:8px;left:10px;color:#888;z-index:10}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div><b>I/O Block preview</b></div>
+  <div><span class="chip" style="background:#9a9aa0"></span>bowl (coakan)
+       &nbsp;<span class="chip" style="background:#ff8c0c"></span>blok
+       &nbsp;<span class="chip" style="background:#3fb15a"></span>plate</div>
+  <label>Explode: <span id="ev">0</span> mm</label>
+  <input id="explode" type="range" min="0" max="80" value="0" />
+  <div class="row"><button id="iso">Iso</button><button id="back">Belakang</button>
+       <button id="side">Samping</button><button id="top">Atas</button></div>
+  <label><input type="checkbox" id="cb" checked> bowl</label>
+  <label><input type="checkbox" id="bk" checked> blok</label>
+  <label><input type="checkbox" id="pl" checked> plate</label>
+</div>
+<div id="stat">memuat STL…</div>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b1d22);
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.5, 5000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 1.1));
+const d1 = new THREE.DirectionalLight(0xffffff,.8); d1.position.set(1,1,2); scene.add(d1);
+const d2 = new THREE.DirectionalLight(0xffffff,.5); d2.position.set(-2,-1,1); scene.add(d2);
+
+// world: STLs are in case frame, Z up. Rotate so Z is up in three (Y up default).
+const root = new THREE.Group();
+root.rotation.x = -Math.PI/2;     // Z-up -> Y-up
+scene.add(root);
+
+const mats = {
+  bowl:  new THREE.MeshStandardMaterial({color:0x9a9aa0, roughness:.7, metalness:.05}),
+  block: new THREE.MeshStandardMaterial({color:0xff8c0c, roughness:.5, metalness:.05}),
+  plate: new THREE.MeshStandardMaterial({color:0x3fb15a, roughness:.7, metalness:.05}),
+};
+const loader = new STLLoader();
+const meshes = {};
+const stat = document.getElementById('stat');
+
+function load(name, file, mat){
+  return new Promise(res=>{
+    loader.load(file, g=>{
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat); root.add(m); meshes[name]=m; res(m);
+    }, undefined, e=>{ stat.textContent='gagal load '+file; res(null); });
+  });
+}
+
+const explodeVecs = { block:new THREE.Vector3(0, 0.7, 1), plate:new THREE.Vector3(0,0,-0.5) };
+const base = {};
+function applyExplode(v){
+  for (const k of ['block','plate']){
+    if(!meshes[k]) continue;
+    const e = explodeVecs[k];
+    meshes[k].position.set(base[k].x + e.x*v, base[k].y + e.y*v, base[k].z + e.z*v);
+  }
+}
+
+await Promise.all([
+  load('bowl','case_main.stl', mats.bowl),
+  load('block','block.stl', mats.block),
+  load('plate','cosmotyl-plateright.stl', mats.plate),
+]);
+for (const k in meshes) base[k] = meshes[k].position.clone();
+
+// center & frame
+const box = new THREE.Box3().setFromObject(root);
+const c = box.getCenter(new THREE.Vector3());
+const size = box.getSize(new THREE.Vector3()).length();
+controls.target.copy(c);
+function view(rx,ry){ camera.position.set(c.x+Math.sin(ry)*size, c.y+rx, c.z+Math.cos(ry)*size); controls.update(); }
+view(size*0.4, 0.9);
+stat.textContent = 'siap — drag untuk putar, scroll zoom';
+
+document.getElementById('iso').onclick =()=>view(size*0.4,0.9);
+document.getElementById('back').onclick=()=>view(size*0.15,Math.PI);
+document.getElementById('side').onclick=()=>view(size*0.1,Math.PI/2);
+document.getElementById('top').onclick =()=>{camera.position.set(c.x,c.y+size,c.z+0.01);controls.update();};
+const ex=document.getElementById('explode');
+ex.oninput=()=>{document.getElementById('ev').textContent=ex.value; applyExplode(+ex.value);};
+const toggle=(id,k)=>document.getElementById(id).onchange=e=>{if(meshes[k])meshes[k].visible=e.target.checked;};
+toggle('cb','bowl'); toggle('bk','block'); toggle('pl','plate');
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+(function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera);})();
+</script>
+</body>
+</html>
