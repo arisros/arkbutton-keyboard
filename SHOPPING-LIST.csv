@@ -1,0 +1,30 @@
+No,Kategori,Barang,Qty,Prioritas,Link,Catatan
+1,Elektronik,HwThinker Pro Micro nRF52840 (compatible nice!Nano V2.0),2,Wajib,https://www.tokopedia.com/hwthinker/pro-micro-nrf52840-promicro-nrf52-nano-33-ble-5-0-bluetooth-nice-nano,Kiri+kanan (dipakai keduanya). Clone tanpa kristal 32kHz -> WAJIB CONFIG_CLOCK_CONTROL_NRF_K32SRC_RC=y (kalau tidak tangan kanan mati). P0.22 mati (QSPI) -> Col1 pindah P0.31. Compile ZMK profil nice!nano v2
+2,Elektronik,Baterai LiPo 3.7V 110mAh 301230 JST PH2.0 (lot 6pcs),1 lot,Wajib,https://www.tokopedia.com/penggesu/6pcs-lot-3-7v-110mah-301230-lithium-polymer-jst-ph-2-0mm-for-nice-nano-or-wireless-keyboard-bluetooth-headset-3d-recording-pen,1 lot cukup 2 board + cadangan. Tipis 3mm. Konektor PH2.0 tinggal colok
+3,Elektronik,Slide switch SS12D00 SPDT 3pin (on/off baterai),2,Wajib,https://www.tokopedia.com/gudanglistrikpontianak/ss12d00-saklar-geser-mini-slide-switch-mini-on-on-3-pin-2-way-spdt,1 per half
+4,Elektronik,Tactile push button reset 6x6x4.3mm,2,Wajib,https://www.tokopedia.com/dutapart/tactile-switch-push-button-6x6x4-3-mm-6x6-x-4-3mm-pcb-mount-mini-micro,Holder reset di cradle. Cek pocket ~5x4.5mm
+5,Elektronik,Dioda 1N4148 (100pcs/pack),2 pack,Wajib,https://www.tokopedia.com/sarahelektronik/100pcs-dioda-1n4148-in4148,~92 kepakai (1/switch) + cadangan
+6,Handwiring,Kawat email tembaga 0.3mm (per meter),30 m,Wajib,https://www.tokopedia.com/040489/kawat-email-tembaga-0-3mm-per-1meter-meteran-0-3-mm-per-1m,~15m/tangan. Ujung dikerik/dibakar sebelum solder
+7,Hardware,Heat-set insert M3 brass (30pcs),1 pack,Wajib,https://www.tokopedia.com/indocart/3d-printer-tools-compatible-brass-heat-insert-nuts-double-twill-knurled-injection-copper-thread-inserts-x-30pcs-1731656093817144863,Fix plate ke case. Ukuran M3 OD4-5 L4-5mm
+8,Hardware,Baut M3 socket cap 6-10mm,1 set,Wajib,https://www.tokopedia.com/salsaa-sttrre/baut-l-m3-m4-m5-3mm-4mm-5mm-6mm-8mm-10mm-14mm-16mm-20mm-25mm-30mm-m3-35mm-497db,Masuk ke insert. M3x6-M3x10
+9,Tent-Magnet,Magnet Neodymium N52 diameter 8mm x 1.5mm,24 pcs,Wajib,https://www.tokopedia.com/find/magnet-neodymium-8mm,BARU: tent-joint magnet. 5 pocket/plate + 5/cover = 10/half x2 = 20 + cadangan. Pastikan ukuran 8x1.5mm N52
+10,Tent-Hardware,Baut M4 socket cap panjang >=14mm,8 pcs,Wajib,https://www.tokopedia.com/find/baut-m4-15mm,Mekanisme stand (base+arm hinge). Bukan joint keyboard (itu magnet)
+11,Tent-Hardware,Mur M4,8 pcs,Wajib,https://www.tokopedia.com/find/mur-m4,Pasangan baut M4 stand
+12,Elektronik,Kabel data USB-C 3A (data 480Mbps bukan charge-only),1,Wajib,https://www.tokopedia.com/ugreenofficialstore/kabel-data-usb-type-c-ugreen-for-samsung-oppo-vivo-fast-charging-3a,Buat flashing firmware. Pastikan port board USB-C
+13,Solder,Timah solder 0.6mm rosin/flux core 60/40,1 roll,Wajib,https://www.tokopedia.com/pgc-sparepart/mechanic-original-kawat-timah-solder-gulung-0-6mm-ty-v866-wire-roll,Stok rumah tinggal dikit. Beli >=1 roll
+14,Solder,Mata solder/tip pengganti 40W (lancip) + tip cleaner,1 set,Wajib,https://www.tokopedia.com/find/mata-solder-40w,MASDA 40W tip lama teroksidasi. Tip cleaner: /find/pembersih-mata-solder
+15,Solder,Flux pasta no-clean/RMA,1,Wajib,https://www.tokopedia.com/fanila-shop-779/flux-pasta-solder-35ml-untuk-solder-komponen-pcb-dan-stainless-tembaga-timah-timah-logam-1730829385622718260,Hindari flux asam/korosif. Pilih RMA/no-clean
+16,Keyboard,Rubber feet 3M self-adhesive,1 pack,Wajib,https://www.tokopedia.com/herzhz/10-pcs-3m-self-adhesive-rubber-feet-kaki-karet,Anti-slip + recess kaki karet di cover_magfeet (diameter 8)
+17,Printer-Maint,Jarum pembersih nozzle 0.35mm (kit 10pcs),1,Opsional,https://www.tokopedia.com/hardwaresolutions/jarum-pembersih-nozzle-3d-printer-cleaning-needle-10pcs-dy11,0.35 buat nozzle 0.4
+18,Printer-Maint,Sikat kuningan nozzle,1,Opsional,https://www.tokopedia.com/k-dunk/12-pcs-sikat-kawat-tembaga-kuningan-gagang-lengkung-3d-printer,Jangan sikat baja
+19,Printer-Maint,Scraper/spatula pengangkat print,1,Opsional,https://www.tokopedia.com/find/scraper-3d-print,
+20,Printer-Maint,Pinset ESD (lurus+bengkok),1 set,Opsional,https://www.tokopedia.com/pitoserba/pinset-esd-series-anti-static-tweezers-untuk-jepit-komponen-smd-dll-paket-6-pcs-5ebe4,Kepakai juga buat handwiring
+21,Printer-Maint,Tang potong/flush cutter,1,Opsional,https://www.tokopedia.com/mechanistore/tang-potong-xuron-nipper-for-gundam-model-kit,Potong support+filament
+22,Printer-Maint,Cleaning/cold-pull filament 1.75mm,1,Opsional,https://www.tokopedia.com/find/cleaning-filament-1.75mm,Bersihin sisa filament nozzle
+23,Printer-Maint,Isopropyl Alcohol (IPA) 99% 1L,1,Opsional,https://www.tokopedia.com/pachemicals/isopropyl-alcohol-isopropyl-alkohol-ipa-99-1-liter,Bersihin bed PEI. Semprot ke kain dulu
+24,Finishing,Amplas waterproof grit 400-2000,1 set,Opsional,https://www.tokopedia.com/wilonastore2015/amplas-duco-grit-400-600-800-1000-1200-1500-2000-2500-3000-sand-paper-waterproof-kertas-lembaran-amplas-basah-kering-halus-amplas-knalpot-amplas-bodi-motor-motor-besi-tembok-kayu-1731932662307980968,Wet sanding urut kasar->halus
+25,Finishing,Sanding block,1,Opsional,https://www.tokopedia.com/wahkhilaf/sanding-block-amplas-blok-pegangan-handle-datar-lurus-dspiae-curved,Biar permukaan rata
+26,Finishing,Dempul Tamiya Putty Basic 32g,1,Opsional,https://www.tokopedia.com/gerberas-corner/tamiya-putty-basic-type-dempul-gundam-model-kit-cat-kuas-airbrush,Tutup garis layer
+27,Finishing,Filler primer/surfacer semprot,1,Opsional,https://www.tokopedia.com/find/diton-putty-primer,Nutup layer line sebelum cat
+28,Finishing,Cat semprot Pylox (warna dasar),1,Opsional,https://www.tokopedia.com/sabanrame/pylox-hitam-kilap-hitam-doff-cat-semprot,
+29,Finishing,Clear coat Pylox Magic Clear Doff 300cc,1,Opsional,https://www.tokopedia.com/tsm-shops/cat-semprot-pilox-pilok-magic-clear-doff-pernis-doff-dop-110-300cc,Doff/matte cocok buat case

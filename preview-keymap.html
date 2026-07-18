@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArkButton · keymap</title>
+<style>
+  :root{
+    --bg:#0b0d10; --sheet:#0f1318; --ink:#dbe2ea; --dim:#7c8896; --faint:#4d5966;
+    --hair:#20272f; --grid:#161c23; --keyfill:#141a21; --accent:#5aa9e6;
+    --warn:#e0603a; --ok:#4ec98a; --violet:#9b8cff; --amber:#e0a13a;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fa; --sheet:#ffffff; --ink:#1b2430; --dim:#5f6b78; --faint:#9aa5b1;
+      --hair:#e4e8ee; --grid:#eef1f5; --keyfill:#f4f6f9; --accent:#2f7dc0; --violet:#6b5bd6; --amber:#b5791a; }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
+    padding:28px 22px 60px;max-width:1120px;margin-inline:auto;}
+  a{color:var(--accent)}
+  /* header */
+  header{margin-bottom:22px}
+  .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  h1{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .spec{font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.02em}
+  .lede{color:var(--dim);font-size:13px;margin:8px 0 0;max-width:74ch}
+  .lede b{color:var(--ink);font-weight:600}
+  /* section */
+  section{margin-top:26px}
+  .shead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .shead h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);margin:0;white-space:nowrap}
+  .shead .rule{height:1px;background:var(--hair);flex:1}
+  .shead .meta{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  /* toggle */
+  .seg{display:inline-flex;border:1px solid var(--hair);border-radius:7px;overflow:hidden;font-family:var(--mono);flex-wrap:wrap}
+  .seg button{border:0;background:transparent;color:var(--dim);padding:7px 13px;font-size:12px;
+    letter-spacing:.02em;cursor:pointer;transition:background .12s,color .12s}
+  .seg button+button{border-left:1px solid var(--hair)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .hint{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-left:auto}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  /* sheet */
+  .sheet{border:1px solid var(--hair);border-radius:10px;background:var(--sheet);overflow:hidden}
+  .sheet .cap{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
+  .sheet .cap .dot{width:6px;height:6px;border-radius:50%}
+  .sheet .cap .grow{flex:1}
+  .sheet .body{overflow-x:auto;padding:20px 18px 22px}
+  /* board */
+  .board{min-width:660px;margin-inline:auto;width:max-content}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr) 22px repeat(6,1fr);gap:7px}
+  .thumbs{display:flex;justify-content:space-between;margin-top:12px;gap:22px}
+  .tcluster{display:flex;gap:7px}
+  .tcluster.left{margin-left:auto;padding-right:2px}
+  .tcluster.right{margin-right:auto;padding-left:2px}
+  .spacer{grid-column:7}
+  /* keycap */
+  .key{position:relative;height:50px;width:50px;border:1px solid var(--hair);border-radius:8px;
+    background:var(--keyfill);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:2px;overflow:hidden}
+  .key .lbl{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);line-height:1.1;text-align:center}
+  .key .sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--faint);
+    position:absolute;bottom:3px;text-transform:uppercase}
+  .key.small .lbl{font-size:10.5px}
+  .key.tiny .lbl{font-size:9px;letter-spacing:.02em}
+  .key.trans{background:transparent;border-style:dashed;border-color:var(--grid)}
+  .key.trans .lbl{color:var(--faint);font-weight:400}
+  .key.none{background:transparent;border-color:var(--grid)}
+  .key.none .lbl{color:var(--faint)}
+  .key.mod .lbl{color:var(--dim)}
+  .key.layer{border-color:color-mix(in srgb,var(--accent) 55%,var(--hair));background:color-mix(in srgb,var(--accent) 12%,var(--keyfill))}
+  .key.layer .lbl{color:var(--accent)}
+  .key.bt{border-color:color-mix(in srgb,var(--ok) 45%,var(--hair));background:color-mix(in srgb,var(--ok) 10%,var(--keyfill))}
+  .key.bt .lbl{color:var(--ok)}
+  .key.sys{border-color:color-mix(in srgb,var(--warn) 45%,var(--hair));background:color-mix(in srgb,var(--warn) 10%,var(--keyfill))}
+  .key.sys .lbl{color:var(--warn)}
+  .key.media .lbl{color:var(--violet)}
+  .key.num .lbl{color:var(--amber)}
+  .key.thumb{border-radius:11px}
+  /* cards */
+  .cols2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:14px}
+  @media(min-width:720px){.cols2{grid-template-columns:1fr 1fr}}
+  .card{border:1px solid var(--hair);border-radius:10px;background:var(--sheet);padding:14px 16px}
+  .card h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);margin:0 0 10px}
+  .note{font-size:12.5px;color:var(--dim);margin:0 0 8px;line-height:1.5}
+  .note:last-child{margin-bottom:0}
+  .note b{color:var(--ink);font-weight:600}
+  .note.warn{color:var(--ink)}
+  .note.warn::before{content:"!";display:inline-grid;place-items:center;width:15px;height:15px;margin-right:7px;
+    border-radius:3px;background:var(--warn);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;vertical-align:-2px}
+  .k{font-family:var(--mono);background:color-mix(in srgb,var(--ink) 8%,transparent);
+    padding:1px 5px;border-radius:4px;font-size:11.5px;color:var(--ink)}
+  .legrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px 14px}
+  .leg{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .leg .sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--hair);flex:none}
+  footer{margin-top:34px;padding-top:12px;border-top:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;color:var(--faint)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>ArkButton</h1>
+      <span class="spec">keymap · 4 layer · 58 keys (24 jari + 5 thumb/tangan) · QWERTY</span>
+    </div>
+    <p class="lede">Keymap <b>saat ini</b> (sumber: <span class="k">charybdis_handwired.keymap</span>). Ditampilkan urutan <b>visual kiri→kanan</b> seperti yang kamu lihat &amp; pencet — mirror tangan kanan sudah diurus di firmware, jadi apa yang tampil di sini = apa yang keluar. Klik tab layer untuk berpindah.</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg" id="layerTabs" role="tablist"></div>
+    <span class="hint" id="layerHint"></span>
+  </div>
+
+  <section>
+    <div class="sheet">
+      <div class="cap">
+        <span class="dot" style="background:var(--ok)"></span>kiri (central)
+        <span class="grow"></span>
+        <span class="dot" style="background:var(--faint)"></span>kanan (peripheral)
+      </div>
+      <div class="body"><div class="board" id="board"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><h2>Referensi</h2><span class="rule"></span></div>
+    <div class="cols2">
+      <div class="card">
+        <h3>Cara akses layer</h3>
+        <p class="note"><b>Layer 0 — Base:</b> QWERTY + number row. 5 thumb/tangan — kiri: <span class="k">Cmd Alt L1 Space Enter</span>, kanan: <span class="k">Enter Space L2 Alt Cmd</span>. (Posisi thumb terdalam <span class="k">Del</span>/<span class="k">Bksp</span> ada di matrix tapi tidak dipasang switch.)</p>
+        <p class="note"><b>Layer 1 — Numpad:</b> tahan <span class="k">L1</span> (thumb kiri ke-3). Numpad di kanan, mod + media di kiri.</p>
+        <p class="note"><b>Layer 2 — Nav/Media:</b> tahan <span class="k">L2</span> (thumb kanan ke-4). Panah di kiri, media di kanan.</p>
+        <p class="note"><b>Layer 3 — Adjust/BT:</b> tahan <span class="k">L1</span>+<span class="k">L2</span> bersamaan → <span class="k">BT_SEL 0–4</span>, <span class="k">BT_CLR</span>, reset.</p>
+      </div>
+      <div class="card">
+        <h3>Warna keycap</h3>
+        <div class="legrid" id="legend"></div>
+        <p class="note" style="margin-top:12px"><b>▽</b> = <span class="k">&amp;trans</span> (transparan — jatuh ke layer di bawahnya). <b>✕</b> = <span class="k">&amp;none</span> (mati).</p>
+        <p class="note warn">Mau ubah keymap <b>tanpa flash</b>? Lagi disiapkan lewat <b>ZMK Studio</b> (edit live). Sementara ini keymap masih diubah lewat file + rebuild.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>ArkButton · preview keymap · sumber: charybdis_handwired.keymap · gaya mengikuti preview-wiring.html</footer>
+
+<script>
+// ===== current keymap (row-major, 12/row × 5 rows; cols 0-5 kiri | 6-11 kanan; row4 = thumbs) =====
+const LAYERS = [
+  { name:"0 · Base", hint:"QWERTY + number row · utility di thumb", keys:[
+    "kp GRAVE","kp N1","kp N2","kp N3","kp N4","kp N5",  "kp N6","kp N7","kp N8","kp N9","kp N0","kp BSPC",
+    "kp TAB","kp Q","kp W","kp E","kp R","kp T",         "kp Y","kp U","kp I","kp O","kp P","kp BSLH",
+    "kp ESC","kp A","kp S","kp D","kp F","kp G",         "kp H","kp J","kp K","kp L","kp SEMI","kp SQT",
+    "kp LSHFT","kp Z","kp X","kp C","kp V","kp B",       "kp N","kp M","kp COMMA","kp DOT","kp FSLH","kp RSHFT",
+    "kp LGUI","kp LALT","mo 1","kp SPACE","kp ENTER","kp DEL",  "kp BSPC","kp ENTER","kp SPACE","mo 2","kp RALT","kp RGUI"
+  ]},
+  { name:"1 · Numpad", hint:"tahan L1 (thumb kiri) · numpad kanan, media kiri", keys:[
+    "trans","trans","trans","trans","trans","kp LBKT",   "kp RBKT","kp KP_N7","kp KP_N8","kp KP_N9","bootloader","kp PLUS",
+    "trans","none","kp LCTRL","kp LALT","kp LGUI","kp LPAR",  "kp RPAR","kp KP_N4","kp KP_N5","kp KP_N6","kp MINUS","kp PIPE",
+    "trans","kp C_PREV","kp C_PP","kp C_NEXT","kp C_MUTE","trans",  "trans","kp KP_N1","kp KP_N2","kp KP_N3","kp EQUAL","kp UNDER",
+    "kp C_VOL_DN","kp C_VOL_UP","trans","kp KP_N0","trans","trans", "trans","trans","trans","trans","trans","trans",
+    "trans","trans","trans","trans","trans","trans",     "trans","trans","trans","trans","trans","trans"
+  ]},
+  { name:"2 · Nav / Media", hint:"tahan L2 (thumb kanan) · panah kiri, media kanan", keys:[
+    "trans","bootloader","trans","trans","trans","kp LBKT",  "kp RBKT","trans","kp KP_NUM","kp INS","kp SLCK","kp C_MUTE",
+    "trans","kp LEFT","kp UP","kp DOWN","kp RIGHT","kp LPAR", "kp RPAR","kp C_PREV","kp C_PP","kp C_NEXT","trans","kp C_VOL_UP",
+    "trans","kp C_PREV","kp C_PP","kp C_NEXT","kp C_MUTE","trans",  "trans","trans","trans","trans","trans","kp C_VOL_DN",
+    "kp C_VOL_DN","kp C_VOL_UP","kp EQUAL","trans","trans","trans", "trans","trans","trans","trans","trans","trans",
+    "trans","trans","trans","trans","trans","trans",     "trans","trans","trans","trans","trans","trans"
+  ]},
+  { name:"3 · Adjust / BT", hint:"tahan L1+L2 · Bluetooth & reset", keys:[
+    "bt BT_CLR","bt BT_SEL 0","bt BT_SEL 1","bt BT_SEL 2","bt BT_SEL 3","bt BT_SEL 4",  "trans","trans","trans","trans","trans","bootloader",
+    "sys_reset","trans","trans","trans","trans","trans", "trans","trans","trans","trans","trans","sys_reset",
+    "trans","trans","trans","trans","trans","trans",     "trans","trans","trans","trans","trans","trans",
+    "trans","trans","trans","trans","trans","trans",     "trans","trans","trans","trans","trans","trans",
+    "trans","trans","trans","trans","trans","trans",     "trans","trans","trans","trans","trans","trans"
+  ]}
+];
+
+// ===== keycode -> {label, sub, cls, size} =====
+const KP = {
+  GRAVE:["~ `"], BSLH:["\\"], SEMI:[";"], SQT:["'"], COMMA:[","], DOT:["."], FSLH:["/"],
+  MINUS:["-"], EQUAL:["="], PLUS:["+"], UNDER:["_"], PIPE:["|"], LBKT:["["], RBKT:["]"], LPAR:["("], RPAR:[")"],
+  N1:["1"],N2:["2"],N3:["3"],N4:["4"],N5:["5"],N6:["6"],N7:["7"],N8:["8"],N9:["9"],N0:["0"],
+  TAB:["Tab","","mod"], ESC:["Esc","","mod"], BSPC:["Bksp","","mod","small"], DEL:["Del","","mod","small"],
+  SPACE:["Space","","mod","small"], ENTER:["Enter","","mod","small"],
+  LSHFT:["Shift","","mod","small"], RSHFT:["Shift","","mod","small"],
+  LGUI:["Cmd","","mod","small"], RGUI:["Cmd","","mod","small"], LALT:["Alt","","mod","small"],
+  RALT:["Alt","","mod","small"], LCTRL:["Ctrl","","mod","small"],
+  INS:["Ins","","mod","small"], SLCK:["ScrLk","","mod","tiny"], KP_NUM:["Num","pad","num","small"],
+  LEFT:["←","arrow","media"], RIGHT:["→","arrow","media"], UP:["↑","arrow","media"], DOWN:["↓","arrow","media"],
+  C_PREV:["⏮","prev","media","small"], C_NEXT:["⏭","next","media","small"], C_PP:["⏯","play","media","small"],
+  C_MUTE:["🔇","mute","media","small"], C_VOL_UP:["Vol +","","media","small"], C_VOL_DN:["Vol −","","media","small"],
+  KP_N0:["0","pad","num"],KP_N1:["1","pad","num"],KP_N2:["2","pad","num"],KP_N3:["3","pad","num"],KP_N4:["4","pad","num"],
+  KP_N5:["5","pad","num"],KP_N6:["6","pad","num"],KP_N7:["7","pad","num"],KP_N8:["8","pad","num"],KP_N9:["9","pad","num"]
+};
+function decode(tok){
+  const p = tok.split(/\s+/);
+  const b = p[0];
+  if(b==="trans") return {label:"▽",cls:"trans"};
+  if(b==="none")  return {label:"✕",cls:"none"};
+  if(b==="mo")    return {label:"L"+p[1],sub:"hold",cls:"layer"};
+  if(b==="bootloader") return {label:"Boot",cls:"sys",size:"small"};
+  if(b==="sys_reset")  return {label:"Reset",cls:"sys",size:"small"};
+  if(b==="bt"){
+    if(p[1]==="BT_CLR") return {label:"BT Clr",cls:"bt",size:"small"};
+    if(p[1]==="BT_SEL") return {label:"BT "+p[2],cls:"bt",size:"small"};
+    return {label:p.slice(1).join(" "),cls:"bt",size:"tiny"};
+  }
+  if(b==="kp"){
+    const m = KP[p[1]];
+    if(m) return {label:m[0],sub:m[1]||"",cls:m[2]||"",size:m[3]||""};
+    // plain single letter / fallback
+    const nm = p[1];
+    return {label:nm.length===1?nm:nm, cls:"", size:nm.length>2?"small":""};
+  }
+  return {label:tok,cls:"",size:"tiny"};
+}
+function keyEl(tok, thumb){
+  const d = decode(tok);
+  const el = document.createElement("div");
+  el.className = "key"+(d.cls?" "+d.cls:"")+(d.size?" "+d.size:"")+(thumb?" thumb":"");
+  const l = document.createElement("div"); l.className="lbl"; l.textContent=d.label; el.appendChild(l);
+  if(d.sub){ const s=document.createElement("div"); s.className="sub"; s.textContent=d.sub; el.appendChild(s); }
+  el.title = "&"+tok;
+  return el;
+}
+
+let cur = 0;
+function render(){
+  const L = LAYERS[cur];
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  // finger rows 0-3
+  const grid = document.createElement("div"); grid.className="grid";
+  for(let r=0;r<4;r++){
+    for(let c=0;c<12;c++){
+      grid.appendChild(keyEl(L.keys[r*12+c], false));
+      if(c===5){ const sp=document.createElement("div"); sp.className="spacer"; grid.appendChild(sp); }
+    }
+  }
+  board.appendChild(grid);
+  // thumb row 4 — only 5 thumbs/hand physically wired. The INNERMOST thumb (nearest
+  // the center gap) has no switch: composite col 5 (left, idx 53) & col 6 (right, idx 54).
+  const ABSENT = new Set([53, 54]);
+  const th = document.createElement("div"); th.className="thumbs";
+  const lc = document.createElement("div"); lc.className="tcluster left";
+  const rc = document.createElement("div"); rc.className="tcluster right";
+  for(let c=0;c<6;c++){ const i=48+c; if(ABSENT.has(i)) continue; lc.appendChild(keyEl(L.keys[i], true)); }
+  for(let c=6;c<12;c++){ const i=48+c; if(ABSENT.has(i)) continue; rc.appendChild(keyEl(L.keys[i], true)); }
+  th.appendChild(lc); th.appendChild(rc);
+  board.appendChild(th);
+  document.getElementById("layerHint").textContent = L.hint;
+  [...document.querySelectorAll("#layerTabs button")].forEach((b,i)=>b.setAttribute("aria-pressed", i===cur));
+}
+// build tabs
+const tabs = document.getElementById("layerTabs");
+LAYERS.forEach((L,i)=>{
+  const b=document.createElement("button");
+  b.textContent=L.name; b.setAttribute("aria-pressed", i===0);
+  b.onclick=()=>{cur=i;render();};
+  tabs.appendChild(b);
+});
+// legend
+const LEG = [
+  ["var(--keyfill)","huruf / angka"],["var(--accent)","layer (MO)"],["var(--ok)","bluetooth"],
+  ["var(--warn)","reset / bootloader"],["var(--violet)","media / panah"],["var(--amber)","numpad"]
+];
+const legend=document.getElementById("legend");
+LEG.forEach(([c,n])=>{ const d=document.createElement("div"); d.className="leg";
+  d.innerHTML=`<span class="sw" style="background:${c}"></span>${n}`; legend.appendChild(d); });
+
+render();
+</script>
+</body>
+</html>

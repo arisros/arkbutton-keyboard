@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArkButton · wiring sheet</title>
+<style>
+  :root{
+    --bg:#0b0d10; --sheet:#0f1318; --ink:#dbe2ea; --dim:#7c8896; --faint:#4d5966;
+    --hair:#20272f; --grid:#161c23; --keyfill:#141a21; --accent:#5aa9e6;
+    --warn:#e0603a; --ok:#4ec98a;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fa; --sheet:#ffffff; --ink:#1b2430; --dim:#5f6b78; --faint:#9aa5b1;
+      --hair:#e4e8ee; --grid:#eef1f5; --keyfill:#f4f6f9; --accent:#2f7dc0; }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
+    padding:28px 22px 60px;max-width:1120px;margin-inline:auto;}
+  a{color:var(--accent)}
+  /* header */
+  header{margin-bottom:22px}
+  .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  h1{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .spec{font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.02em}
+  .lede{color:var(--dim);font-size:13px;margin:8px 0 0;max-width:70ch}
+  .lede b{color:var(--ink);font-weight:600}
+  /* section */
+  section{margin-top:30px}
+  .shead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .shead h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);margin:0;white-space:nowrap}
+  .shead .rule{height:1px;background:var(--hair);flex:1}
+  .shead .meta{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  /* controls */
+  .seg{display:inline-flex;border:1px solid var(--hair);border-radius:7px;overflow:hidden;font-family:var(--mono)}
+  .seg button{border:0;background:transparent;color:var(--dim);padding:7px 14px;font-size:12px;
+    letter-spacing:.02em;cursor:pointer;transition:background .12s,color .12s}
+  .seg button+button{border-left:1px solid var(--hair)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .hint{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-left:auto}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  /* sheet canvas */
+  .sheet{border:1px solid var(--hair);border-radius:10px;background:var(--sheet);overflow:hidden}
+  .sheet .cap{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
+  .sheet .cap .dot{width:6px;height:6px;border-radius:50%}
+  .sheet .body{overflow-x:auto}
+  svg{display:block}
+  svg text{font-family:var(--mono)}
+  /* legend / notes grid */
+  .cols2{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:720px){.cols2{grid-template-columns:1.1fr .9fr}}
+  .card{border:1px solid var(--hair);border-radius:10px;background:var(--sheet);padding:14px 16px}
+  .card h3{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);margin:0 0 10px}
+  .legrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px 14px}
+  .leg{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px}
+  .leg .wire{width:20px;height:0;border-top-width:3px;border-top-style:solid;border-radius:2px;flex:none}
+  .leg .net{color:var(--ink);font-weight:600;min-width:20px}
+  .leg .nm{color:var(--dim)}
+  .note{font-size:12.5px;color:var(--dim);margin:0 0 8px;line-height:1.5}
+  .note b{color:var(--ink);font-weight:600}
+  .note.warn{color:var(--ink)}
+  .note.warn::before{content:"!";display:inline-grid;place-items:center;width:15px;height:15px;margin-right:7px;
+    border-radius:3px;background:var(--warn);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;vertical-align:-2px}
+  .k{font-family:var(--mono);background:color-mix(in srgb,var(--ink) 8%,transparent);
+    padding:1px 5px;border-radius:4px;font-size:11.5px;color:var(--ink)}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps li{counter-increment:s;position:relative;padding:6px 0 6px 30px;font-size:13px;border-top:1px solid var(--hair)}
+  ol.steps li:first-child{border-top:0}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:19px;height:19px;
+    display:grid;place-items:center;font-family:var(--mono);font-size:11px;color:var(--dim);
+    border:1px solid var(--hair);border-radius:5px}
+  footer{margin-top:34px;padding-top:12px;border-top:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;color:var(--faint)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>ArkButton</h1>
+      <span class="spec">handwired split · 6×5 matrix · col2row · nice!nano v2</span>
+    </div>
+    <p class="lede">Skema handwiring per tangan. Garis berwarna = <b>bus kabel asli</b> keyboardmu (kolom &amp; baris). Tiap switch: satu kaki ke <b>bus kolom</b>, kaki lain lewat <b>dioda</b> ke <b>bus baris</b>. Baris&nbsp;4 = 5 thumb.</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg" role="tablist">
+      <button id="bSolder" aria-pressed="true" onclick="setMode('solder')">sisi solder · mirror</button>
+      <button id="bTop" aria-pressed="false" onclick="setMode('top')">sisi atas</button>
+    </div>
+    <span class="hint" id="modeHint"></span>
+  </div>
+
+  <section>
+    <div class="shead"><h2>Matrix</h2><span class="rule"></span><span class="meta">29 key/tangan (24 jari + 5 thumb) · dioda 1N4148</span></div>
+    <div class="sheet" style="margin-bottom:14px">
+      <div class="cap"><span class="dot" style="background:var(--ok)"></span>tangan kiri — central (USB/BLE ke Mac)</div>
+      <div class="body"><svg id="svgLeft"></svg></div>
+    </div>
+    <div class="sheet">
+      <div class="cap"><span class="dot" style="background:var(--faint)"></span>tangan kanan — peripheral (BLE ke kiri) · pin identik, beda keycap</div>
+      <div class="body"><svg id="svgRight"></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><h2>Controller &amp; Power</h2><span class="rule"></span><span class="meta">HwThinker Pro Micro nRF52840 · nomor = silkscreen board</span></div>
+    <div class="sheet">
+      <div class="cap"><span class="dot" style="background:var(--accent)"></span>bus kolom/baris → pin bernomor · baterai → B+/B− · slide switch di jalur B+</div>
+      <div class="body"><svg id="svgCtrl"></svg></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><h2>Referensi</h2><span class="rule"></span></div>
+    <div class="cols2">
+      <div class="card">
+        <h3>Warna kabel</h3>
+        <div class="legrid" id="wireLegend"></div>
+        <p class="note" style="margin-top:12px">Warna diambil dari kabel fisikmu (terkonfirmasi). <span class="k">kuning</span> &amp; <span class="k">merah</span> dipakai 2× — beda kabel; label C/R yang membedakan.</p>
+      </div>
+      <div class="card">
+        <h3>Aturan</h3>
+        <p class="note warn"><b>Band dioda (garis) menghadap bus BARIS.</b> Terbalik → key mati atau ghosting.</p>
+        <p class="note">col2row: kolom di-<i>drive</i>, baris di-<i>baca</i>. Tap bus boleh dari titik mana pun (satu bus = satu node).</p>
+        <p class="note"><span class="k">022</span> terbukti MATI sebagai GPIO di board ini (QSPI flash clone) → C1 orange dipindah ke <span class="k">031</span> (P0.31). 020/024 sebelahnya normal.</p>
+        <p class="note warn"><b>Tangan KANAN = mirror.</b> Pin kiri &amp; kanan identik &amp; urutan sama, tapi PCB kanan cermin → kolomnya kebalik. Dikoreksi di <b>firmware</b> (<span class="k">right.overlay</span> membalik col-gpios + <span class="k">col-offset=6</span>), <b>bukan</b> di wiring. Jangan disolder ulang.</p>
+        <p class="note"><b>Clock fix (wajib clone):</b> HwThinker Pro Micro nRF52840 tanpa kristal 32.768kHz → split link timeout, kanan mati. Diperbaiki di <span class="k">.conf</span> dengan <span class="k">K32SRC_RC=y</span>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><h2>Urutan</h2><span class="rule"></span></div>
+    <div class="card">
+      <ol class="steps">
+        <li>Pasang 30 switch. Balik keyboard — mode <b>sisi solder</b> sudah di-mirror sesuai yang kamu lihat.</li>
+        <li><b>Bus kolom (6):</b> satu kawat per kolom, sambung kaki-1 semua switch sekolom, ujung ke pin kolom.</li>
+        <li><b>Dioda (30):</b> kaki-2 tiap switch → 1N4148, band ke arah bus baris.</li>
+        <li><b>Bus baris (5):</b> sambung ujung dioda sebaris, ujung ke pin baris. Baris 4 = 5 thumb.</li>
+        <li>Baterai → B+/B− (via slide switch di B+). Cek continuity sebelum tutup case.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+
+<script>
+// REMAPPED 2026-07-18 to Aris's actual solder (columns shifted, R3→017, R4→100)
+const COLS = [
+  {c:"C0",pin:"D5·P0.24",flash:1},{c:"C1",pin:"D4·P0.31"},{c:"C2",pin:"D3·P0.20",flash:1},
+  {c:"C3",pin:"D1·P0.06"},{c:"C4",pin:"D0·P0.08"},{c:"C5",pin:"D18·P1.15"},
+];
+const ROWS = [
+  {r:"R0",pin:"D9·P1.06"},{r:"R1",pin:"D8·P1.04"},{r:"R2",pin:"D7·P0.11"},
+  {r:"R3",pin:"D2·P0.17",flash:1},{r:"R4",pin:"D6·P1.00"},
+];
+const LEFT = [
+  ["~","1","2","3","4","5"],
+  ["Tab","Q","W","E","R","T"],
+  ["Esc","A","S","D","F","G"],
+  ["Sft","Z","X","C","V","B"],
+  ["Gui","Spc",".","Alt","Bks",""],
+];
+const RIGHT = [
+  ["6","7","8","9","0","Bks"],
+  ["Y","U","I","O","P","\\"],
+  ["H","J","K","L",";","'"],
+  ["N","M",",",".","/","Sft"],
+  ["","Bks","Alt",".","Spc","Gui"],
+];
+const WIRE = {
+  C0:'#e6b422', C1:'#e8823a', C2:'#d84a54', C3:'#8a94a0', C4:'#4a90d9', C5:'#9c6b45',
+  R0:'#e6b422', R1:'#d84a54', R2:'#4bb37a', R3:'#9b6cd6', R4:'#c9d2dc',
+};
+const WIRENAME = {C0:"kuning",C1:"orange",C2:"merah",C3:"hitam",C4:"biru",C5:"coklat",
+  R0:"kuning",R1:"merah",R2:"hijau",R3:"ungu",R4:"putih"};
+
+let mode="solder";
+const NS="http://www.w3.org/2000/svg";
+const cv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const WC = net => WIRE[net] || cv("--dim");
+const silkOf = pin => { const p=pin.split("·")[1]||""; return p.replace("P","").replace(".",""); };
+
+// legend
+(function(){
+  const lg=document.getElementById("wireLegend");
+  ["C0","C1","C2","C3","C4","C5","R0","R1","R2","R3","R4"].forEach(n=>{
+    const d=document.createElement("div"); d.className="leg";
+    d.innerHTML=`<span class="wire" style="border-top-color:${WIRE[n]}"></span><span class="net">${n}</span><span class="nm">${WIRENAME[n]}</span>`;
+    lg.appendChild(d);
+  });
+})();
+
+function mk(svg){return (t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e;};}
+// subtle graph-paper grid
+function gridBg(svg,el,W,H,step){
+  const gid="grid-"+svg.id;
+  const defs=el("defs",{});
+  const pat=document.createElementNS(NS,"pattern");
+  pat.setAttribute("id",gid);pat.setAttribute("width",step);pat.setAttribute("height",step);pat.setAttribute("patternUnits","userSpaceOnUse");
+  const pth=document.createElementNS(NS,"path");
+  pth.setAttribute("d",`M ${step} 0 L 0 0 0 ${step}`);pth.setAttribute("fill","none");
+  pth.setAttribute("stroke",cv("--grid"));pth.setAttribute("stroke-width","1");
+  pat.appendChild(pth);defs.appendChild(pat);
+  el("rect",{x:0,y:0,width:W,height:H,fill:`url(#${gid})`});
+}
+// diode glyph on a vertical wire, cathode(bar) pointing DOWN toward row bus
+function diodeV(el,x,yTop,yBot,wireCol){
+  const my=(yTop+yBot)/2;
+  el("line",{x1:x,y1:yTop,x2:x,y2:my-5,stroke:cv("--dim"),"stroke-width":1.6});
+  el("path",{d:`M ${x-4.5} ${my-5} L ${x+4.5} ${my-5} L ${x} ${my+1.5} Z`,fill:cv("--ink")});
+  el("line",{x1:x-4.5,y1:my+2.5,x2:x+4.5,y2:my+2.5,stroke:cv("--ink"),"stroke-width":1.8});
+  el("line",{x1:x,y1:my+2.5,x2:x,y2:yBot,stroke:cv("--dim"),"stroke-width":1.6});
+}
+function junction(el,x,y,col){el("circle",{cx:x,cy:y,r:2.6,fill:col});}
+
+function draw(svgId,data){
+  const svg=document.getElementById(svgId); svg.innerHTML="";
+  const el=mk(svg);
+  const isRight=svgId==="svgRight";
+  const order=mode==="solder"?[5,4,3,2,1,0]:[0,1,2,3,4,5];
+  const padL=70,padT=52,colP=104,rowP=88,sw=44,swh=34,FR=4;
+  const clY=padT+FR*rowP+56;
+  const Wd=padL+6*colP+40, Hd=clY+250;
+  svg.setAttribute("viewBox",`0 0 ${Wd} ${Hd}`);
+  svg.setAttribute("width",Math.min(Wd,1080)); svg.setAttribute("height",Math.min(Wd,1080)*Hd/Wd);
+  gridBg(svg,el,Wd,Hd,16);
+  const colX=ci=>padL+ci*colP+colP/2;
+  const rowY=ri=>padT+ri*rowP+rowP/2;
+  const colbusX=vi=>colX(vi)-sw/2-12;
+
+  // column buses
+  order.forEach((cAbs,vi)=>{
+    const c=COLS[cAbs],x=colbusX(vi),col=WC(c.c);
+    el("line",{x1:x,y1:padT-22,x2:x,y2:padT+FR*rowP-6,stroke:col,"stroke-width":3});
+    el("text",{x:x,y:padT-28,fill:col,"font-size":11,"font-weight":700,"text-anchor":"middle"},c.c);
+    el("text",{x:x,y:padT-16,fill:cv("--faint"),"font-size":9,"text-anchor":"middle"},silkOf(c.pin));
+    el("text",{x:x,y:padT+FR*rowP+6,fill:cv("--faint"),"font-size":9,"text-anchor":"middle"},"↓");
+  });
+  // row buses
+  for(let ri=0;ri<FR;ri++){
+    const y=rowY(ri)+swh/2+12,col=WC(ROWS[ri].r);
+    el("line",{x1:padL-16,y1:y,x2:colX(5)+sw/2+8,y2:y,stroke:col,"stroke-width":3});
+    el("text",{x:padL-20,y:y-4,fill:col,"font-size":11,"font-weight":700,"text-anchor":"end"},ROWS[ri].r);
+    el("text",{x:padL-20,y:y+7,fill:cv("--faint"),"font-size":9,"text-anchor":"end"},silkOf(ROWS[ri].pin));
+  }
+  // finger switches
+  for(let ri=0;ri<FR;ri++){
+    order.forEach((cAbs,vi)=>{
+      const c=COLS[cAbs],col=WC(c.c),cx=colX(vi),cy=rowY(ri);
+      const busX=colbusX(vi),busY=cy+swh/2+12;
+      el("rect",{x:cx-sw/2,y:cy-swh/2,width:sw,height:swh,rx:5,fill:cv("--keyfill"),stroke:cv("--hair"),"stroke-width":1.3});
+      el("text",{x:cx,y:cy-1,fill:cv("--ink"),"font-size":13,"font-weight":600,"text-anchor":"middle"},data[ri][cAbs]);
+      el("text",{x:cx,y:cy+swh/2-4,fill:cv("--faint"),"font-size":8,"text-anchor":"middle"},ROWS[ri].r+"·"+c.c);
+      // leg-1 → column bus
+      el("line",{x1:cx-sw/2,y1:cy-7,x2:busX,y2:cy-7,stroke:col,"stroke-width":2});
+      junction(el,busX,cy-7,col);
+      // leg-2 → diode → row bus
+      const dx=cx+sw/4;
+      diodeV(el,dx,cy+swh/2,busY,col);
+      junction(el,dx,busY,WC(ROWS[ri].r));
+    });
+  }
+
+  // thumb cluster (row 4) — physical fan, spaced to avoid overlap
+  const th=[]; COLS.forEach((c,ci)=>{ if(data[4][ci]!=="") th.push({key:data[4][ci],c,ci}); });
+  // (col,row) in key-steps: 2 top + 1 side(lower) + 2 bottom
+  let slots=[[0.0,0.0],[1.15,0.0],[2.15,0.6],[0.4,1.2],[1.55,1.2]];
+  if(isRight) slots=slots.map(s=>[2.15-s[0],s[1]]);
+  const kw=56,kh=42,kpx=80,kpy=66,ox=padL+60,oy=clY+26;
+  const busY=oy+1.2*kpy+kh+40, r4c=WC("R4");
+  el("text",{x:padL-20,y:clY,fill:cv("--dim"),"font-size":10,"font-weight":700,"letter-spacing":".08em"},"R4 · THUMB");
+  el("line",{x1:padL-16,y1:busY,x2:ox+2.2*kpx,y2:busY,stroke:r4c,"stroke-width":3});
+  el("text",{x:padL-20,y:busY-4,fill:r4c,"font-size":11,"font-weight":700,"text-anchor":"end"},"R4");
+  el("text",{x:padL-20,y:busY+7,fill:cv("--faint"),"font-size":9,"text-anchor":"end"},silkOf(ROWS[4].pin));
+  th.forEach((t,i)=>{
+    if(i>=slots.length) return;
+    const px=ox+slots[i][0]*kpx, py=oy+slots[i][1]*kpy, col=WC(t.c.c), bx=colbusX(order.indexOf(t.ci));
+    // leg-1 → column bus (orthogonal drop then across)
+    const jy=py+kh/2;
+    el("path",{d:`M ${bx} ${padT+FR*rowP-6} L ${bx} ${jy} L ${px} ${jy}`,fill:"none",stroke:col,"stroke-width":2});
+    junction(el,px,jy,col);
+    el("rect",{x:px,y:py,width:kw,height:kh,rx:6,fill:cv("--keyfill"),stroke:cv("--hair"),"stroke-width":1.3});
+    el("text",{x:px+kw/2,y:py+kh/2-2,fill:cv("--ink"),"font-size":13,"font-weight":600,"text-anchor":"middle"},t.key);
+    el("text",{x:px+kw/2,y:py+kh-6,fill:cv("--faint"),"font-size":8,"text-anchor":"middle"},"R4·"+t.c.c);
+    // leg-2 → diode → R4 bus
+    const dx=px+kw*0.7;
+    diodeV(el,dx,py+kh,busY,col);
+    junction(el,dx,busY,r4c);
+  });
+}
+
+function drawController(){
+  const svg=document.getElementById("svgCtrl"); svg.innerHTML="";
+  const el=mk(svg);
+  // [silk-name, port, net, netcolorkey, flash]
+  const L=[
+    ["GND","",""],
+    ["D1","P0.06","C3"],["D0","P0.08","C4"],["GND","",""],["GND","",""],
+    ["D2","P0.17","R3",1],["D3","P0.20","C2",1],["D4","P0.22",""],
+    ["D5","P0.24","C0",1],["D6","P1.00","R4"],["D7","P0.11","R2"],
+    ["D8","P1.04","R1"],["D9","P1.06","R0"]];
+  const R=[
+    ["B+","","BATT+","pwr"],["RAW","","BATT+","pwr"],["GND","","B−","gnd"],["RST","","RESET","rst"],["VCC","","3V3","vcc"],
+    ["D21","P0.31","C1"],["D20","P0.29",""],["D19","P0.02",""],["D18","P1.15","C5"],
+    ["D15","P1.13",""],["D14","P1.11",""],["D16","P0.10",""],["D10","P0.09",""]];
+  const bx=250,by=58,bw=150,rowH=28,pr=6.5,bh=rowH*12+22;
+  const Wd=bx+bw+250, Hd=by+bh+150;
+  svg.setAttribute("viewBox",`0 0 ${Wd} ${Hd}`);
+  svg.setAttribute("width",Math.min(Wd,900)); svg.setAttribute("height",Math.min(Wd,900)*Hd/Wd);
+  gridBg(svg,el,Wd,Hd,16);
+  // board
+  el("rect",{x:bx,y:by,width:bw,height:bh,rx:7,fill:cv("--keyfill"),stroke:cv("--hair"),"stroke-width":1.4});
+  el("rect",{x:bx+bw/2-20,y:by-11,width:40,height:13,rx:2,fill:cv("--hair")});
+  el("text",{x:bx+bw/2,y:by-2,fill:cv("--dim"),"font-size":8,"text-anchor":"middle"},"USB-C");
+  // vertical MCU label down the board centre (won't collide with silk columns)
+  el("text",{x:bx+bw/2,y:by+bh/2,fill:cv("--faint"),"font-size":9,"font-weight":700,"text-anchor":"middle",
+    transform:`rotate(-90 ${bx+bw/2} ${by+bh/2})`,"letter-spacing":".18em"},"HwThinker Pro Micro nRF52840");
+  const padY=i=>by+16+i*rowH;
+  const NETRE=/^[CR]\d$/;
+  const roleCol={pwr:cv("--warn"),gnd:cv("--dim"),rst:cv("--ok"),vcc:cv("--accent")};
+  [["L",L],["R",R]].forEach(([side,list])=>{
+    list.forEach((p,i)=>{
+      const py=padY(i), px=side==="L"?bx+14:bx+bw-14;
+      const isNet=NETRE.test(p[2]);
+      const col=isNet?WC(p[2]):(roleCol[p[3]]||cv("--faint"));
+      el("circle",{cx:px,cy:py,r:pr,fill:p[2]?col:"none",stroke:p[2]?col:cv("--faint"),"stroke-width":1.5});
+      // silkscreen number (as printed on board): 006 = P0.06
+      const silk=p[1]?p[1].replace("P","").replace(".",""):p[0];
+      el("text",{x:side==="L"?px+11:px-11,y:py+3.5,fill:cv("--dim"),"font-size":9.5,"font-weight":600,"text-anchor":side==="L"?"start":"end"},silk);
+      if(p[2]){
+        const bo=side==="L"?px-94:px+44, bw2=58;
+        el("line",{x1:side==="L"?bo+bw2:bo,y1:py,x2:px,y2:py,stroke:col,"stroke-width":1.8});
+        el("rect",{x:bo,y:py-8.5,width:bw2,height:17,rx:4,fill:"none",stroke:col,"stroke-width":1.4});
+        el("text",{x:bo+bw2/2,y:py+3.5,fill:col,"font-size":9.5,"font-weight":700,"text-anchor":"middle"},p[2]+(p[3]===1?" ⚠":""));
+      }
+    });
+  });
+  // ---- power sub-schematic (self-contained, no wires crossing the board) ----
+  const pcol=roleCol.pwr, ncol=cv("--dim");
+  const batX=bx-6, batY=by+bh+52, batW=96, batH=40;
+  el("text",{x:batX,y:batY-14,fill:cv("--dim"),"font-size":10,"font-weight":700,"letter-spacing":".08em"},"POWER");
+  el("rect",{x:batX,y:batY,width:batW,height:batH,rx:6,fill:cv("--keyfill"),stroke:cv("--hair"),"stroke-width":1.3});
+  el("text",{x:batX+batW/2,y:batY+17,fill:cv("--ink"),"font-size":10,"font-weight":700,"text-anchor":"middle"},"LiPo 3.7V");
+  el("text",{x:batX+batW/2,y:batY+31,fill:cv("--faint"),"font-size":8.5,"text-anchor":"middle"},"JST-PH2.0");
+  // + terminal → slide switch → B+
+  const yP=batY+12, yN=batY+28;
+  const swX=batX+batW+30, swY=yP-9, swW=48, swH=18;
+  el("line",{x1:batX+batW,y1:yP,x2:swX,y2:yP,stroke:pcol,"stroke-width":2});
+  el("circle",{cx:batX+batW,cy:yP,r:2.4,fill:pcol});
+  el("rect",{x:swX,y:swY,width:swW,height:swH,rx:3,fill:cv("--keyfill"),stroke:pcol,"stroke-width":1.4});
+  el("text",{x:swX+swW/2,y:swY-4,fill:pcol,"font-size":8.5,"font-weight":700,"text-anchor":"middle"},"SLIDE SW");
+  [0,1,2].forEach(i=>{const kx=swX+12+i*12; el("circle",{cx:kx,cy:swY+swH,r:2.6,fill:i<2?pcol:"none",stroke:pcol,"stroke-width":1.4});});
+  el("rect",{x:swX+7,y:swY+4,width:12,height:swH-8,rx:2,fill:pcol,opacity:.35});
+  el("text",{x:swX+swW/2,y:swY+swH+13,fill:cv("--faint"),"font-size":8,"text-anchor":"middle"},"tengah + 1 pinggir");
+  // switch out → labeled leader to B+
+  el("line",{x1:swX+swW,y1:yP,x2:swX+swW+26,y2:yP,stroke:pcol,"stroke-width":2});
+  el("text",{x:swX+swW+30,y:yP+3.5,fill:pcol,"font-size":10,"font-weight":700,"text-anchor":"start"},"→ B+ / RAW");
+  // − terminal → labeled leader to GND
+  el("line",{x1:batX+batW,y1:yN,x2:swX+swW+26,y2:yN,stroke:ncol,"stroke-width":2});
+  el("circle",{cx:batX+batW,cy:yN,r:2.4,fill:ncol});
+  el("text",{x:swX+swW+30,y:yN+3.5,fill:cv("--dim"),"font-size":10,"font-weight":700,"text-anchor":"start"},"→ GND (B−)");
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById("bSolder").setAttribute("aria-pressed",m==="solder");
+  document.getElementById("bTop").setAttribute("aria-pressed",m==="top");
+  document.getElementById("modeHint").textContent = m==="solder"
+    ? "keyboard dibalik · kolom mirror C5→C0"
+    : "dilihat dari sisi keycap · kolom C0→C5";
+  document.getElementById("foot").textContent = "sumber pin: charybdis_handwired.dtsi · served 127.0.0.1:8081/preview-wiring.html";
+  draw("svgLeft",LEFT); draw("svgRight",RIGHT); drawController();
+}
+setMode("solder");
+window.matchMedia("(prefers-color-scheme:dark)").addEventListener("change",()=>setMode(mode));
+</script>
+</body>
+</html>
