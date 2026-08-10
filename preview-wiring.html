@@ -111,7 +111,7 @@
   <section>
     <div class="shead"><h2>Controller &amp; Power</h2><span class="rule"></span><span class="meta">HwThinker Pro Micro nRF52840 · nomor = silkscreen board</span></div>
     <div class="sheet">
-      <div class="cap"><span class="dot" style="background:var(--accent)"></span>bus kolom/baris → pin bernomor · baterai → B+/B− · slide switch di jalur B+</div>
+      <div class="cap"><span class="dot" style="background:var(--accent)"></span>bus kolom/baris → pin bernomor · baterai → B+/B− · slide switch di jalur B+ · LED indikator di pad 002</div>
       <div class="body"><svg id="svgCtrl"></svg></div>
     </div>
   </section>
@@ -136,6 +136,27 @@
   </section>
 
   <section>
+    <div class="shead"><h2>Indikator baterai</h2><span class="rule"></span><span class="meta">1 LED per tangan · P0.02 · pola kedip</span></div>
+    <div class="cols2">
+      <div class="card">
+        <h3>Pola kedip</h3>
+        <p class="note"><b>&lt; 30% → kedip 2× per detik</b> (nyala ~90ms, jeda ~410ms), diulang tiap 60 detik biar nggak berisik &amp; nggak boros.</p>
+        <p class="note"><b>&lt; 10%</b> → pola sama tapi diulang tiap 20 detik.</p>
+        <p class="note"><b>Cek manual</b> — tekan kombo <span class="k">&amp;bat_ind</span>: jumlah kedipan = level. 4 = &gt;75%, 3 = &gt;50%, 2 = &gt;30%, 1 = kritis.</p>
+        <p class="note"><b>Boot</b> — 1 kedip panjang saat board nyala = tanda hidup.</p>
+        <p class="note">Tiap half nunjukin baterainya <b>sendiri</b>, nggak lewat link BLE — jadi tetap jalan walau split lagi putus.</p>
+      </div>
+      <div class="card">
+        <h3>Komponen &amp; catatan</h3>
+        <p class="note">LED 3mm/5mm biasa: <b>hijau di kiri</b>, <b>kuning di kanan</b>. Resistor <b>680Ω</b> (≈2mA — aman untuk drive standar GPIO nRF52840 dan tetap terang di dalam case).</p>
+        <p class="note warn"><b>Kaki panjang = anoda</b> → ke resistor/GPIO. Kaki pendek + sisi rata di badan LED = katoda → GND. Kebalik = LED nggak nyala (tidak rusak).</p>
+        <p class="note">Pad <span class="k">002</span> (P0.02) dipilih karena bebas dan aman — bukan pin QSPI seperti <span class="k">020</span>–<span class="k">024</span>. Pin ini sama untuk kedua half, jadi wiring kiri &amp; kanan identik.</p>
+        <p class="note">Nanti kalau LED RGB sudah dibeli: LED ini tinggal dipindah jadi salah satu channel, jalur 002 tetap dipakai.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="shead"><h2>Urutan</h2><span class="rule"></span></div>
     <div class="card">
       <ol class="steps">
@@ -144,6 +165,7 @@
         <li><b>Dioda (30):</b> kaki-2 tiap switch → 1N4148, band ke arah bus baris.</li>
         <li><b>Bus baris (5):</b> sambung ujung dioda sebaris, ujung ke pin baris. Baris 4 = 5 thumb.</li>
         <li>Baterai → B+/B− (via slide switch di B+). Cek continuity sebelum tutup case.</li>
+        <li><b>LED indikator (2 kabel/tangan):</b> pad <b>002</b> → resistor 680Ω → kaki panjang LED (anoda); kaki pendek (katoda) → GND. Kiri hijau, kanan kuning.</li>
       </ol>
     </div>
   </section>
@@ -310,8 +332,10 @@ function drawController(){
     ["B+","","BATT+","pwr"],["RAW","","BATT+","pwr"],["GND","","B−","gnd"],["RST","","RESET","rst"],["VCC","","3V3","vcc"],
     ["D21","P0.31","C1"],["D20","P0.29",""],["D19","P0.02",""],["D18","P1.15","C5"],
     ["D15","P1.13",""],["D14","P1.11",""],["D16","P0.10",""],["D10","P0.09",""]];
+  // P0.02 (silk 002) dipakai indikator baterai — lihat sub-skema INDIKATOR di bawah
+  R[7]=["D19","P0.02","LED","led"];
   const bx=250,by=58,bw=150,rowH=28,pr=6.5,bh=rowH*12+22;
-  const Wd=bx+bw+250, Hd=by+bh+150;
+  const Wd=bx+bw+250, Hd=by+bh+265;
   svg.setAttribute("viewBox",`0 0 ${Wd} ${Hd}`);
   svg.setAttribute("width",Math.min(Wd,900)); svg.setAttribute("height",Math.min(Wd,900)*Hd/Wd);
   gridBg(svg,el,Wd,Hd,16);
@@ -324,7 +348,7 @@ function drawController(){
     transform:`rotate(-90 ${bx+bw/2} ${by+bh/2})`,"letter-spacing":".18em"},"HwThinker Pro Micro nRF52840");
   const padY=i=>by+16+i*rowH;
   const NETRE=/^[CR]\d$/;
-  const roleCol={pwr:cv("--warn"),gnd:cv("--dim"),rst:cv("--ok"),vcc:cv("--accent")};
+  const roleCol={pwr:cv("--warn"),gnd:cv("--dim"),rst:cv("--ok"),vcc:cv("--accent"),led:"#4ec98a"};
   [["L",L],["R",R]].forEach(([side,list])=>{
     list.forEach((p,i)=>{
       const py=padY(i), px=side==="L"?bx+14:bx+bw-14;
@@ -366,6 +390,40 @@ function drawController(){
   el("line",{x1:batX+batW,y1:yN,x2:swX+swW+26,y2:yN,stroke:ncol,"stroke-width":2});
   el("circle",{cx:batX+batW,cy:yN,r:2.4,fill:ncol});
   el("text",{x:swX+swW+30,y:yN+3.5,fill:cv("--dim"),"font-size":10,"font-weight":700,"text-anchor":"start"},"→ GND (B−)");
+
+  // ---- battery indicator LED (1 LED per tangan, single colour) ----
+  const lcol=roleCol.led;
+  const ix=batX+6, iy=by+bh+150, wy=iy+18;
+  el("text",{x:batX,y:iy,fill:cv("--dim"),"font-size":10,"font-weight":700,"letter-spacing":".08em"},"INDIKATOR BATERAI");
+  // pad tap
+  el("circle",{cx:ix,cy:wy,r:4,fill:lcol});
+  el("text",{x:ix-6,y:wy+3.5,fill:lcol,"font-size":9.5,"font-weight":700,"text-anchor":"end"},"002");
+  el("text",{x:ix-6,y:wy+16,fill:cv("--faint"),"font-size":8,"text-anchor":"end"},"P0.02");
+  // resistor
+  const rx=ix+64, rw=46;
+  el("line",{x1:ix,y1:wy,x2:rx,y2:wy,stroke:lcol,"stroke-width":1.8});
+  el("rect",{x:rx,y:wy-8,width:rw,height:16,rx:2,fill:cv("--keyfill"),stroke:lcol,"stroke-width":1.4});
+  el("text",{x:rx+rw/2,y:wy+18,fill:lcol,"font-size":9,"font-weight":700,"text-anchor":"middle"},"680Ω");
+  // LED symbol: anoda (triangle) kiri, katoda (bar) kanan
+  const lx=rx+rw+38;
+  el("line",{x1:rx+rw,y1:wy,x2:lx,y2:wy,stroke:lcol,"stroke-width":1.8});
+  el("path",{d:`M${lx} ${wy-11} L${lx} ${wy+11} L${lx+22} ${wy} Z`,fill:lcol,opacity:.85});
+  el("line",{x1:lx+22,y1:wy-12,x2:lx+22,y2:wy+12,stroke:lcol,"stroke-width":2.4});
+  [0,1].forEach(i=>{const ax=lx+4+i*10, ay=wy-15;
+    el("line",{x1:ax,y1:ay,x2:ax+8,y2:ay-8,stroke:lcol,"stroke-width":1.3});
+    el("path",{d:`M${ax+8} ${ay-8} l-3.4 .6 l1.4 2.6 Z`,fill:lcol});});
+  el("text",{x:lx-6,y:wy+26,fill:cv("--faint"),"font-size":8,"text-anchor":"end"},"anoda");
+  el("text",{x:lx+30,y:wy+26,fill:cv("--faint"),"font-size":8,"text-anchor":"start"},"katoda");
+  // → GND
+  const gx=lx+22+52;
+  el("line",{x1:lx+22,y1:wy,x2:gx,y2:wy,stroke:ncol,"stroke-width":1.8});
+  el("line",{x1:gx,y1:wy,x2:gx,y2:wy+12,stroke:ncol,"stroke-width":1.8});
+  [0,1,2].forEach(i=>el("line",{x1:gx-(11-i*4),y1:wy+12+i*4,x2:gx+(11-i*4),y2:wy+12+i*4,stroke:ncol,"stroke-width":1.8}));
+  el("text",{x:gx+16,y:wy+3.5,fill:cv("--dim"),"font-size":9.5,"font-weight":700},"GND");
+  // keterangan
+  el("text",{x:batX,y:wy+52,fill:cv("--ink"),"font-size":9.5,"font-weight":700},"kiri = LED HIJAU · kanan = LED KUNING");
+  el("text",{x:batX,y:wy+66,fill:cv("--dim"),"font-size":9},"<30% → kedip 2×/detik · kombo cek = jumlah kedipan (4=penuh … 1=kritis)");
+  el("text",{x:batX,y:wy+80,fill:cv("--faint"),"font-size":8.5},"1 kabel per tangan ke pad 002; katoda ikut bus GND yang sudah ada");
 }
 
 function setMode(m){

@@ -1,0 +1,21 @@
+#!/bin/bash
+# ArkButton flasher — usage: flash left | flash right | flash reset
+FW=~/keyboard-project/firmware
+case "$1" in
+  left)  UF2="$FW/charybdis_handwired_left-nice_nano_v2-zmk.uf2";  NAME="KIRI (central)";;
+  right) UF2="$FW/charybdis_handwired_right-nice_nano_v2-zmk.uf2"; NAME="KANAN (peripheral)";;
+  reset) UF2="$FW/settings_reset-nice_nano_v2.uf2";                NAME="settings_reset (clear bond)";;
+  *) echo "Usage: flash left | flash right | flash reset"; exit 1;;
+esac
+[ -f "$UF2" ] || { echo "❌ UF2 ga ketemu: $UF2"; exit 1; }
+echo "→ $NAME"
+echo "  Double-press push button board-nya (mode bootloader)..."
+for i in $(seq 1 30); do [ -f /Volumes/NICENANO/INFO_UF2.TXT ] && break; sleep 0.5; done
+if [ ! -f /Volumes/NICENANO/INFO_UF2.TXT ]; then echo "❌ Drive NICENANO ga muncul (15s). Double-press lagi."; exit 1; fi
+cp "$UF2" /Volumes/NICENANO/ 2>/dev/null
+sleep 3
+if ls /Volumes/ 2>/dev/null | grep -qi nano; then
+  echo "⚠️  Drive masih ada — coba lagi (mungkin copy gagal)."
+else
+  echo "✅ FLASH $NAME SUKSES (drive ilang = board reboot)."
+fi

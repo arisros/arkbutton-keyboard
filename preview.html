@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Charybdis 6-thumb + Tenting — Preview</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b1d22;color:#e8e8e8;font:14px system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0}
+  #panel{position:fixed;top:12px;left:12px;background:#262a31cc;padding:14px 16px;border-radius:10px;backdrop-filter:blur(4px);width:300px;max-height:92vh;overflow:auto}
+  #panel h1{font-size:14px;margin:0 0 4px}
+  #panel .sub{font-size:11px;opacity:.6;margin-bottom:10px}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12px;margin:7px 0}
+  .sw{width:11px;height:11px;border-radius:2px;flex:0 0 auto}
+  .grp{font-size:11px;opacity:.55;margin:12px 0 2px;text-transform:uppercase;letter-spacing:.5px}
+  .row{margin:9px 0}
+  label{font-size:12px;opacity:.85}
+  input[type=range]{width:100%}
+  .val{float:right;opacity:.95;font-variant-numeric:tabular-nums}
+  #hint{margin-top:12px;font-size:11px;opacity:.6;line-height:1.5}
+  #status{position:fixed;bottom:10px;left:12px;font-size:11px;opacity:.5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>🎹 Scylla build — READY TO PRINT</h1>
+  <div class="sub">RAKIT = case + tent-cover nempel (bukti align) · cover/bottom/arm = part print</div>
+
+  <div class="grp">Keyboard</div>
+  <div id="layers"></div>
+
+  <div class="grp">Tampilan</div>
+  <div class="chk"><input type="checkbox" id="wire"><label>Wireframe</label></div>
+  <div class="chk"><input type="checkbox" id="spread" checked><label>Jajar berjarak (uncheck = tumpuk di origin)</label></div>
+  <div class="row">
+    <label>Clip / potong <span class="val" id="clipv">off</span></label>
+    <input type="range" id="clippos" min="-120" max="120" value="120" step="1">
+  </div>
+
+  <div id="hint">
+    Drag = putar · scroll = zoom · kanan-drag = geser.<br>
+    Axes: <b style="color:#e05">X</b> · <b style="color:#3c3">Y</b> · <b style="color:#39f">Z</b>.<br>
+    Tent = stand adjustable repo (plat-bawah engsel + lengan + base, baut M4).<br>
+    <i>Belum dirakit ke pose final — ini buat review geometri tiap part.</i>
+  </div>
+</div>
+<div id="status">loading…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader }     from 'three/addons/loaders/STLLoader.js';
+import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// path, label, color, kind, slot
+// [path, label, color, kind, slot, rotX]  (rotX=90 -> Scylla Y-up to Z-up)
+// [path, label, color, kind, slot, rotX]  — tools/*_up.stl already Z-up -> rotX 0
+const PARTS = [
+  ['tools/assembled_LEFT.stl',           'RAKIT KIRI (case+cover)',  0x9aa7b4, 'stl', 0, 0],
+  ['tools/assembled_RIGHT.stl',          'RAKIT KANAN (case+cover)', 0x7cc4a8, 'stl', 1, 0],
+  ['tools/tent/cover_tent_LEFT.stl',     'Tent-cover KIRI',          0xc98b5a, 'stl', 2, 0],
+  ['tools/tent/cover_tent_RIGHT.stl',    'Tent-cover KANAN',         0xe09a4f, 'stl', 3, 0],
+  ['tools/tent/bottom.stl',              'Base stand (tent)',        0x7fd17f, 'stl', 4, 0],
+  ['tools/tent/tenting-arm.stl',         'Tenting arm',              0xd1c05a, 'stl', 5, 0],
+  ['tools/cradle_RIGHT.stl',             'SuperMini cradle',         0x6fb1ff, 'stl', 6, 0],
+  ['tools/assembled_optionA.stl',        'OPSI A: case+adapter+arm+base (baut)', 0xb98fd4, 'stl', 7, 90],
+];
+const SLOT = 90; // mm spacing between parts when spread
+
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.localClippingEnabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b1d22);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+camera.position.set(120, -240, 160);
+camera.up.set(0, 0, 1);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const k = new THREE.DirectionalLight(0xffffff, 0.9); k.position.set(80,-120,160); scene.add(k);
+const f = new THREE.DirectionalLight(0xffffff, 0.4); f.position.set(-100,80,40); scene.add(f);
+scene.add(new THREE.AxesHelper(40));
+const grid = new THREE.GridHelper(600, 30, 0x444a55, 0x2a2f38); grid.rotation.x = Math.PI/2; scene.add(grid);
+
+const clipPlane = new THREE.Plane(new THREE.Vector3(-1,0,0), 120);
+const items = {};   // label -> {obj, slot}
+let loaded = 0;
+
+function center(obj){ // recenter geometry to its own origin (XY), keep on grid (min Z = 0)
+  const box = new THREE.Box3().setFromObject(obj);
+  const c = box.getCenter(new THREE.Vector3());
+  obj.position.sub(new THREE.Vector3(c.x, c.y, box.min.z));
+}
+function setMat(obj, color){
+  obj.traverse(n => { if (n.isMesh){ n.material = new THREE.MeshStandardMaterial({color, metalness:.12, roughness:.65, side:THREE.DoubleSide, clippingPlanes:[]}); }});
+}
+function place(){
+  const spread = document.getElementById('spread').checked;
+  const n = PARTS.length;
+  for (const lbl in items){ const it = items[lbl];
+    it.obj.position.x += spread ? (it.slot - (n-1)/2) * SLOT - it.obj.position.x : -it.obj.position.x;
+  }
+}
+function applyWire(){ const w=document.getElementById('wire').checked; for(const l in items) items[l].obj.traverse(n=>{if(n.isMesh)n.material.wireframe=w;}); }
+function applyClip(){ const v=parseFloat(document.getElementById('clippos').value); const on=v<120; clipPlane.constant=v;
+  document.getElementById('clipv').textContent = on ? v.toFixed(0) : 'off';
+  for(const l in items) items[l].obj.traverse(n=>{if(n.isMesh)n.material.clippingPlanes = on?[clipPlane]:[];}); }
+
+function add(obj, label, color, slot, rotX){
+  if (rotX) { obj.rotation.x = rotX * Math.PI/180; obj.updateMatrixWorld(true); }
+  setMat(obj, color); center(obj); obj.userData.slotBaseX = (slot)*SLOT;
+  items[label] = { obj, slot };
+  scene.add(obj); place(); applyWire(); applyClip();
+  statusEl.textContent = (++loaded) + '/' + PARTS.length + ' part loaded';
+}
+
+const stl = new STLLoader(), mf = new ThreeMFLoader();
+const layersEl = document.getElementById('layers');
+for (const [path,label,color,kind,slot,rotX] of PARTS){
+  // UI row
+  const row = document.createElement('label'); row.className='chk';
+  row.innerHTML = `<input type="checkbox" checked><span class="sw" style="background:#${color.toString(16).padStart(6,'0')}"></span>${label}`;
+  const cb = row.querySelector('input');
+  cb.onchange = e => { if(items[label]) items[label].obj.visible = e.target.checked; };
+  layersEl.appendChild(row);
+  // load
+  if (kind==='stl') stl.load(path, g => { g.computeVertexNormals(); add(new THREE.Mesh(g), label, color, slot, rotX); }, undefined, ()=>statusEl.textContent='err '+label);
+  else mf.load(path, o => add(o, label, color, slot, rotX), undefined, ()=>statusEl.textContent='err '+label);
+}
+
+document.getElementById('wire').onchange = applyWire;
+document.getElementById('spread').onchange = place;
+document.getElementById('clippos').oninput = applyClip;
+
+addEventListener('resize', onResize); onResize();
+function onResize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
+</script>
+</body>
+</html>

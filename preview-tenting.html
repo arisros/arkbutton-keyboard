@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scylla Tenting — Rakitan + Arm Artikulasi</title>
+<style>
+  html,body{margin:0;height:100%;background:#15171c;color:#e8e8e8;font:14px system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0}
+  #panel{position:fixed;top:12px;left:12px;background:#22262ecc;padding:14px 16px;border-radius:12px;backdrop-filter:blur(6px);width:290px;max-height:94vh;overflow:auto}
+  h1{font-size:15px;margin:0 0 2px}.sub{font-size:11px;opacity:.6;margin-bottom:10px}
+  .grp{font-size:11px;opacity:.55;margin:13px 0 4px;text-transform:uppercase;letter-spacing:.6px}
+  .row{margin:9px 0}label{font-size:12px;opacity:.9}
+  input[type=range]{width:100%;accent-color:#4ea1ff}.val{float:right;color:#7fc0ff;font-variant-numeric:tabular-nums}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12px;margin:6px 0}.sw{width:11px;height:11px;border-radius:3px}
+  .btn{display:inline-block;margin:3px 4px 0 0;padding:5px 9px;background:#333a45;border:0;border-radius:6px;color:#e8e8e8;font-size:11px;cursor:pointer}
+  .btn:hover{background:#3d4654}.btn.on{background:#2c6cb0}
+  #read{margin-top:8px;font-size:12px;line-height:1.6;background:#1a1d23;padding:8px 10px;border-radius:8px}#read b{color:#7fc0ff}
+  #hint{margin-top:11px;font-size:11px;opacity:.55;line-height:1.5}
+  #status{position:fixed;bottom:10px;left:12px;font-size:11px;opacity:.5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>🦵 Scylla Tenting</h1>
+  <div class="sub">Rakitan asli + arm artikulasi. Kaki arm ngunci di takik (pin-lock), lengan ngikut pivot.</div>
+  <div class="grp">Pin-lock (takik base → sudut)</div>
+  <div class="row" id="notches"></div>
+  <div class="grp">Atau geser bebas (Δ dari desain)</div>
+  <div class="row"><input type="range" id="ang" min="-15" max="25" value="0" step="1"><div><span style="font-size:11px;opacity:.6">drag</span><span class="val" id="angv">0°</span></div></div>
+  <div class="grp">Part</div><div id="layers"></div>
+  <div class="chk"><input type="checkbox" id="wire"><label>Wireframe</label></div>
+  <div id="read">Sudut tent keyboard: <b id="rTent">–</b> · pin-lock <b id="rLock">desain</b></div>
+  <div id="hint">Drag=putar · scroll=zoom · kanan-drag=geser.<br>Hijau=base (meja) · Oranye=bottom-cover (engsel) · Biru=arm · Abu=keyboard.<br><i>Pin-lock = sudut asli yg didukung takik. Kaki arm pindah takik → sudut beda.</i></div>
+</div>
+<div id="status">loading…</div>
+<script type="importmap">
+{ "imports": { "three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/" }}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const SHIFT=new THREE.Vector3(-106.5,-15,1);
+const hingeWorld=new THREE.Vector3(160.5,0,5).add(SHIFT);     // deck pivot (axis // world Y)
+const MOUNT_N=new THREE.Vector3(0.442,-0.003,0.897).normalize();
+const MOUNT_C=new THREE.Vector3(-43.9,-1.4,36.1);   // seated down onto the engsel (gap closed)
+const DECK_ATTACH=new THREE.Vector3(-61,15,35);              // arm TOP pivot (on cover) — fixed rotation point
+const ARM_FOOTLOCAL=new THREE.Vector3(-6.5,0,-34.5);         // arm foot relative to its top pivot
+const NOTCHES=[{x:70,th:9},{x:80,th:3},{x:90,th:-1},{x:100,th:-3}];  // base holes -> deck angle
+const footWorldOf=x=>new THREE.Vector3(x-106.5,0,8);
+const DESIGN_FOOT=new THREE.Vector3(-11.5,0,5.5);
+
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});renderer.setPixelRatio(devicePixelRatio);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x15171c);
+const camera=new THREE.PerspectiveCamera(45,1,0.1,6000);camera.position.set(60,-330,150);camera.up.set(0,0,1);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(-10,0,35);
+scene.add(new THREE.AmbientLight(0xffffff,0.65));
+let k=new THREE.DirectionalLight(0xffffff,.9);k.position.set(120,-160,230);scene.add(k);
+let f=new THREE.DirectionalLight(0xffffff,.35);f.position.set(-130,110,70);scene.add(f);
+const grid=new THREE.GridHelper(700,28,0x3a4350,0x232830);grid.rotation.x=Math.PI/2;scene.add(grid);
+
+const deck=new THREE.Group();deck.position.copy(hingeWorld);scene.add(deck);
+const deckAttach=new THREE.Object3D();deckAttach.position.copy(DECK_ATTACH);deck.add(deckAttach);
+const armGrp=new THREE.Group();scene.add(armGrp);   // pivots at TOP (deck attach); positioned each frame
+const statusEl=document.getElementById('status'),stl=new STLLoader();const parts={};let curSlot=DESIGN_FOOT.clone();
+const mat=c=>new THREE.MeshStandardMaterial({color:c,metalness:.12,roughness:.62,side:THREE.DoubleSide});
+function load(path,color,rotX=true){return new Promise(res=>stl.load(path,g=>{if(rotX)g.rotateX(Math.PI/2);g.computeVertexNormals();res(new THREE.Mesh(g,mat(color)));},undefined,()=>{statusEl.textContent='err '+path;res(null);}));}
+
+async function build(){
+  const base=await load('tools/tent/bottom.stl',0x2f8f4e);
+  if(base){base.position.copy(SHIFT);scene.add(base);parts.base={mesh:base,color:0x2f8f4e};}
+  const kb=await load('tools/case_RIGHT_up.stl',0x9aa7b4,false);
+  let kbOff=null;
+  if(kb){const bb=new THREE.Box3().setFromObject(kb),c=bb.getCenter(new THREE.Vector3());
+    kbOff=new THREE.Vector3(-c.x,-c.y,-bb.min.z); kb.geometry.translate(kbOff.x,kbOff.y,kbOff.z);
+    kb.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),MOUNT_N);
+    kb.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),3.5*Math.PI/180));  // keyboard RotY 3.5
+    kb.position.copy(MOUNT_C); deck.add(kb);parts.keyboard={mesh:kb,color:0x9aa7b4};window.__kb=kb;}
+  // bottom-cover = OUR case's own bottom plate, same transform as keyboard -> closes case exactly
+  // FINAL merged cover+bracket (cover baked RotY 3.8°, keyboard 3.5°)
+  const hinge=await load('tools/tent/tenting_cover_FINAL.stl',0xc98a3c,false);
+  if(hinge){hinge.position.set(0,0,0);deck.add(hinge);parts.hinge={mesh:hinge,color:0xc98a3c};window.__cover=hinge;}
+  // arm: TOP pivot at armGrp origin; foot swings to base slots
+  const arm=await load('tools/tent/tenting-arm.stl',0x3f6ed0);
+  if(arm){arm.position.set(-101.5,-15,-39);armGrp.add(arm);parts.arm={mesh:arm,color:0x3f6ed0};}
+  buildNotchUI();buildUI();apply();statusEl.textContent='ready';
+}
+let curAngle=0;
+function setFoot(v){curSlot.copy(v);}
+function apply(){
+  document.getElementById('angv').textContent=(curAngle>0?'+':'')+curAngle+'°';
+  deck.rotation.y=-curAngle*Math.PI/180; deck.updateMatrixWorld(true);
+  // articulate arm: TOP pivot fixed on cover (moves w/ deck); FOOT swings to the base slot
+  const T=new THREE.Vector3();deckAttach.getWorldPosition(T); armGrp.position.copy(T);
+  const d=new THREE.Vector3().subVectors(curSlot,T);
+  const yaw=Math.atan2(d.z,d.x)-Math.atan2(ARM_FOOTLOCAL.z,ARM_FOOTLOCAL.x);
+  armGrp.rotation.y=yaw;
+  const up=MOUNT_N.clone().applyEuler(new THREE.Euler(0,deck.rotation.y,0));
+  document.getElementById('rTent').textContent=(Math.acos(Math.min(1,Math.abs(up.z)))*180/Math.PI).toFixed(0)+'°';
+}
+function buildNotchUI(){const el=document.getElementById('notches');el.innerHTML='';
+  for(const n of NOTCHES){const b=document.createElement('button');b.className='btn';b.textContent=`X${n.x} (${n.th>0?'+':''}${n.th}°)`;
+    b.onclick=()=>{curAngle=n.th;document.getElementById('ang').value=n.th;setFoot(footWorldOf(n.x));
+      document.getElementById('rLock').textContent='takik X'+n.x;[...el.children].forEach(c=>c.classList.toggle('on',c===b));apply();};
+    el.appendChild(b);} }
+function buildUI(){const el=document.getElementById('layers');el.innerHTML='';
+  const lab={base:'Base (meja)',hinge:'Cover+bracket (final)',arm:'Arm',keyboard:'Keyboard'};
+  for(const key of['keyboard','hinge','base','arm']){if(!parts[key])continue;const row=document.createElement('label');row.className='chk';
+    row.innerHTML=`<input type="checkbox" checked><span class="sw" style="background:#${parts[key].color.toString(16).padStart(6,'0')}"></span>${lab[key]}`;
+    row.querySelector('input').onchange=e=>parts[key].mesh.visible=e.target.checked;el.appendChild(row);} }
+document.getElementById('ang').oninput=e=>{curAngle=+e.target.value;document.getElementById('rLock').textContent='bebas';[...document.getElementById('notches').children].forEach(c=>c.classList.remove('on'));apply();};
+document.getElementById('wire').onchange=()=>{const w=document.getElementById('wire').checked;for(const k in parts)parts[k].mesh.traverse(n=>{if(n.isMesh)n.material.wireframe=w;});};
+addEventListener('resize',onResize);onResize();function onResize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+window.__cam=camera; window.__ctrl=controls; window.THREE=THREE; window.__MOUNT_N=MOUNT_N.toArray(); window.__render=()=>{controls.update();renderer.render(scene,camera);};
+// remount cover with an arbitrary extra local rotation R (for tilt tuning): axis+deg
+window.__setCorr=(np,nk)=>{ const T=window.THREE, cov=window.__cover;
+  const Q=new T.Quaternion().setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...window.__MOUNT_N));
+  const R=new T.Quaternion().setFromUnitVectors(new T.Vector3(...np).normalize(),new T.Vector3(...nk).normalize());
+  cov.quaternion.copy(Q).multiply(R); window.__render(); };
+window.__measTilt=()=>{ const T=window.THREE, cov=window.__cover, kb=window.__kb;
+  cov.updateMatrixWorld(true); kb.updateMatrixWorld(true);
+  const nm=new T.Matrix3();
+  const cN=new T.Vector3(0,0,-1).applyMatrix3(nm.getNormalMatrix(cov.matrixWorld)).normalize();
+  const kN=new T.Vector3(0.027,0.003,-1).applyMatrix3(nm.getNormalMatrix(kb.matrixWorld)).normalize();
+  return Math.acos(Math.min(1,Math.abs(cN.dot(kN))))*180/Math.PI; };
+(function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera);})();
+build();
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scylla — Original tenting (rakit lengkap)</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b1d22;color:#e8e8e8;font:14px system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0}
+  #panel{position:fixed;top:12px;left:12px;background:#262a31d8;padding:14px 16px;border-radius:10px;backdrop-filter:blur(4px);width:315px;max-height:94vh;overflow:auto}
+  #panel h1{font-size:14px;margin:0 0 2px}
+  #panel .sub{font-size:11px;opacity:.62;margin-bottom:10px;line-height:1.5}
+  .row{margin:9px 0}
+  label{display:block;font-size:12px;opacity:.85;margin-bottom:4px}
+  input[type=range]{width:100%}
+  .val{float:right;opacity:.95;font-variant-numeric:tabular-nums}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12px;opacity:.92;margin:5px 0}
+  .sw{width:12px;height:12px;border-radius:3px;flex:none}
+  .plan{margin-top:12px;font-size:11px;line-height:1.65;opacity:.85;border-top:1px solid #ffffff20;padding-top:9px}
+  .plan b{color:#7cc4ff}.plan .mag{color:#dadae2}
+  #hint{margin-top:9px;font-size:11px;opacity:.55;line-height:1.5}
+  #status{position:fixed;bottom:10px;left:12px;font-size:11px;opacity:.5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>🧲 MAGNET — tent tanpa baut + kaki karet</h1>
+  <div class="sub">Joint baut → <b>5 pasang magnet ⌀8×1.5 N52</b> (rata, flush, tanpa boss). Cover keyboard juga dapat <b>4 recess kaki karet ⌀8</b> buat mode standalone (tent dilepas).</div>
+  <div class="row">
+    <label>💥 Angkat keyboard (lihat marker) <span class="val" id="expv">0</span></label>
+    <input type="range" id="explode" min="0" max="100" value="22" step="1">
+  </div>
+  <div id="layers"></div>
+  <div class="plan">
+    <b>Magnet:</b> ⌀8×1.5mm N52, <b>5 pasang</b> (magnet↔magnet, muka ketemu muka). Pocket dibor identik di plat & cover → auto-align.<br>
+    <b>Plat</b> pocket ⌀8.3×1.5 blind (plat 3mm → floor 1.5). <b>Cover</b> pocket ⌀8.3×1.5 blind (floor 0.5, <b>TANPA boss</b>) → sisi dalam keyboard RATA, magnet nggak tembus.<br>
+    Magnet dikecilin ke ⌀8 biar cukup jauh dari tepi (frame plat sempit): margin cover-edge <b>3–4.5mm</b>.<br>
+    <b>Kaki karet:</b> 4 recess ⌀8×1 di sudut cover (mode standalone, tent dilepas) — ukuran sama kayak base.<br><br>
+    <i>Geser Explode buat angkat keyboard & lihat 5 magnet biru di antara plat & cover. TODO: mirror KIRI + validasi + polarity glue.</i>
+  </div>
+  <div id="hint">Drag=putar · scroll=zoom · geser <b>Explode</b> buat pisahin keyboard dari tent.</div>
+</div>
+<div id="status">loading…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader }     from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// OPSI 1 — separate generic top plate. Keyboard keeps its STOCK bottom cover, sits ON the plate.
+// native frame, Y-up. tent parts co-registered; keyboard posed onto plate.stl top plane (29.6 deg tilt).
+const PARTS = [
+  ['tools/tent/bottom.stl',         'Base stand (original)',        0x3f63c9, 'tent', [0,0,0]],
+  ['tools/tent/tenting-arm.stl',    'Arm tenting (original)',       0x5f8cd0, 'tent', [0,0,0]],
+  ['tools/tent/plate_mag_RIGHT.stl','Plat + pocket magnet 5×',      0xe0912f, 'tent', [0,0,0]],
+  ['tools/tent/mag_markers.stl',    'Magnet ⌀8×1.5 N52 (5 pasang)', 0x59b0ff, 'tent', [0,0,0]],
+  ['tools/tent/dep2/case.stl',      'Case keyboard (stock)',        0xb8bcc4, 'kb',   [0,0,0]],
+  ['tools/tent/dep2/cover_mod.stl', 'Cover + pocket magnet + recess kaki karet', 0x7d828c, 'kb', [0,0,0]],
+];
+const EXPLODE_DIR = new THREE.Vector3(0.494, 0.869, 0).normalize(); // plate top normal (29.6 deg)
+const U_DIR = new THREE.Vector3(0,0,1);                    // in-plane axis 1 (native Z)
+const V_DIR = new THREE.Vector3(0.869,-0.494,0).normalize(); // in-plane axis 2
+const YAW_AXIS = new THREE.Vector3(0.494,0.869,0).normalize(); // plate normal (rotate "from above")
+const PIVOT = new THREE.Vector3(121.1,36.9,-15.5);        // plate top center (rotation pivot)
+
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x1b1d22);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.5, 6000); camera.up.set(0,1,0);
+const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const d1 = new THREE.DirectionalLight(0xffffff, 0.85); d1.position.set(120,-140,200); scene.add(d1);
+const d2 = new THREE.DirectionalLight(0xffffff, 0.4); d2.position.set(-120,90,-60); scene.add(d2);
+
+const kbGroup = new THREE.Group(), tentGroup = new THREE.Group();
+scene.add(kbGroup, tentGroup);
+const items = {}; let loaded = 0; const loader = new STLLoader(); const box = new THREE.Box3();
+
+function fit(){
+  box.makeEmpty(); for (const l in items) box.expandByObject(items[l].mesh);
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+  const r = Math.max(s.x, s.y, s.z);
+  controls.target.copy(c);
+  camera.position.copy(c).add(new THREE.Vector3(r*1.2, -r*1.3, r*0.6));
+  camera.near = r/100; camera.far = r*20; camera.updateProjectionMatrix();
+}
+function add(path,label,color,group,tr,geo){
+  geo.computeVertexNormals();
+  const isMark = label.includes('Lubang');
+  const mat = new THREE.MeshStandardMaterial({ color, metalness:0.1, roughness:0.6, side:THREE.DoubleSide,
+    emissive: isMark?color:0x000000, emissiveIntensity: isMark?0.6:0 });
+  if (isMark){ mat.depthTest = false; mat.transparent = true; }
+  const m = new THREE.Mesh(geo, mat);
+  if (isMark) m.renderOrder = 10;
+  m.position.set(tr[0],tr[1],tr[2]);
+  (group==='kb'?kbGroup:tentGroup).add(m);
+  items[label] = { mesh:m };
+  const row = document.createElement('label'); row.className='chk';
+  row.innerHTML = `<input type="checkbox" checked><span class="sw" style="background:#${color.toString(16).padStart(6,'0')}"></span>${label}`;
+  row.querySelector('input').onchange = e => m.visible = e.target.checked;
+  document.getElementById('layers').appendChild(row);
+  statusEl.textContent = (++loaded)+'/'+PARTS.length+' part'; fit(); applyExplode();
+}
+for (const [path,label,color,group,tr] of PARTS)
+  loader.load(path, g => add(path,label,color,group,tr,g), undefined, () => statusEl.textContent='err '+label);
+
+function applyExplode(){
+  const v=+document.getElementById('explode').value;
+  document.getElementById('expv').textContent=v;
+  kbGroup.position.copy(EXPLODE_DIR).multiplyScalar(v*0.8);
+}
+document.getElementById('explode').oninput = applyExplode;
+
+addEventListener('resize', onResize); onResize();
+function onResize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
+</script>
+</body>
+</html>

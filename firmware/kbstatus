@@ -1,0 +1,10 @@
+#!/bin/bash
+# Cek status ArkButton di Bluetooth Mac
+echo "=== ArkButton (kiri/central → Mac) ==="
+BT=$(system_profiler SPBluetoothDataType 2>/dev/null)
+if echo "$BT" | grep -q "ArkButton:"; then
+  echo "$BT" | awk '/ArkButton:/{f=1} f{print} f&&/Battery|Product ID/{if(++n>=8)exit}' \
+    | grep -iE "ArkButton|Connected|Address|RSSI|Battery|Minor Type|Vendor|Product" | sed 's/^ */  /'
+else
+  echo "  belum ke-pair (masih Nearby / di-forget). Pair dulu di System Settings > Bluetooth."
+fi
