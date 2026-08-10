@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Upstream clones — each has its own git remote, re-clone instead of vendoring
+/Charybdis/
+/Cosmos-Keyboards/
+/Scylla/
+/dactyl-manuform-keyboard/
+/STL-to-OpenSCAD-Converter/
+/zmk-studio/
+
+# Own ZMK config, lives in its own repo:
+# https://github.com/arisros/charybdis-wireless-zmk
+/charybdis-wireless-zmk/
+
+node_modules/
+
+# Generated geometry, renders and machine output
+*.stl
+*.3mf
+*.gcode
+*.uf2
+/out/
+/tools/captures/
+/tools/plate_v2/
+tools/validate-report.json
+cosmos/*.png
+tools/tent/*.png
