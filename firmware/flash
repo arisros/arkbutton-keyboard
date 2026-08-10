@@ -1,13 +1,18 @@
 #!/bin/bash
 # ArkButton flasher — usage: flash left | flash right | flash reset
-FW=~/keyboard-project/firmware
+FW="$(cd "$(dirname "$0")" && pwd)"
 case "$1" in
   left)  UF2="$FW/charybdis_handwired_left-nice_nano_v2-zmk.uf2";  NAME="KIRI (central)";;
   right) UF2="$FW/charybdis_handwired_right-nice_nano_v2-zmk.uf2"; NAME="KANAN (peripheral)";;
   reset) UF2="$FW/settings_reset-nice_nano_v2.uf2";                NAME="settings_reset (clear bond)";;
   *) echo "Usage: flash left | flash right | flash reset"; exit 1;;
 esac
-[ -f "$UF2" ] || { echo "❌ UF2 ga ketemu: $UF2"; exit 1; }
+[ -f "$UF2" ] || {
+  echo "❌ UF2 ga ketemu: $UF2"
+  echo "   .uf2 sengaja ga masuk git (output CI). Download artifact 'firmware' dari"
+  echo "   https://github.com/arisros/charybdis-wireless-zmk/actions → unzip ke $FW/"
+  exit 1
+}
 echo "→ $NAME"
 echo "  Double-press push button board-nya (mode bootloader)..."
 for i in $(seq 1 30); do [ -f /Volumes/NICENANO/INFO_UF2.TXT ] && break; sleep 0.5; done

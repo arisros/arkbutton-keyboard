@@ -4,8 +4,8 @@ module placeShift(gap=0)
   translate([Ctop[0]+N[0]*gap,Ctop[1]+N[1]*gap,Ctop[2]+N[2]*gap])
     rotate([0,0,-29.6]) rotate([-90,0,0]) translate([-kbctr[0],-kbctr[1],-kbctr[2]]) children();
 // clean Scylla outline from the flat cover (projected), extruded 4mm, holes drilled
-module outline() projection(cut=false) translate([-181,0,0]) import("/Users/arisjirat/keyboard-project/tools/plate_RIGHT_flat.stl",convexity=10);
+module outline() projection(cut=false) translate([-181,0,0]) import("../plate_RIGHT_flat.stl",convexity=10);
 module slabLocal(){ difference(){ linear_extrude(7,center=true) outline();
   for(h=holes) translate([h[0],h[1],0]) cylinder(h=30,d=4.5,center=true,$fn=28); } }
 module slab() placeShift(-1.5) slabLocal();
-union(){ import("/Users/arisjirat/keyboard-project/tools/tent/plate.stl",convexity=10); slab(); }
+union(){ import("plate.stl",convexity=10); slab(); }
