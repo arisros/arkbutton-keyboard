@@ -1,4 +1,6 @@
-# ArkButton — split keyboard build
+# ArkButton: split keyboard build
+
+![ArkButton on its tenting stands, one half either side of a laptop](docs/images/final-setup.jpg)
 
 Working files for a **handwired wireless split keyboard**: Bastard Keyboards
 *Scylla* / *Charybdis* geometry, 24 finger keys + 5 thumb keys per hand
@@ -6,21 +8,47 @@ Working files for a **handwired wireless split keyboard**: Bastard Keyboards
 Micro nRF52840 (nice!nano v2 compatible) running ZMK, printed on an Elegoo
 Neptune 4 Pro, on an articulated tenting stand.
 
+**Status:** finished in July 2026. The story with photos is in
+[`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
+
 Everything here is **source and notes**. The STL / GCODE / PNG / UF2 output is
-deliberately not committed — it is regenerated (see below).
+deliberately not committed, it is regenerated (see below).
+
+## Specs
+
+| | |
+|---|---|
+| Keys | 58: 24 finger + 5 thumb per hand |
+| Case | Bastard Keyboards Scylla MK2, 5-thumb default, PLA |
+| Switches / keycaps | Gateron G Pro Brown, PBT MOA |
+| Wiring | handwired matrix, one 1N4148 per switch, soldered direct (no hotswap) |
+| Controllers | 2× HwThinker Pro Micro nRF52840 (nice!nano v2 compatible) |
+| Firmware | ZMK, config in [arisros/charybdis-wireless-zmk](https://github.com/arisros/charybdis-wireless-zmk) |
+| Tenting | Charybdis tenting stand mod (base stand, no wrist pads), 17/21/25/29° notches |
+| Printer | Elegoo Neptune 4 Pro (Klipper) |
+
+## Build
+
+<p>
+  <img src="docs/images/wiring-matrix.jpg" alt="Both halves with the diode matrix wired" width="49%">
+  <img src="docs/images/tent-stand-side.jpg" alt="One half on the tenting stand, side view" width="49%">
+</p>
+
+More photos and the timeline: [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md).
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `PRINT-QUEUE.md` | what to print, in what order, which slicer profile — includes the verified handedness correction (upstream file names are mirrored) |
+| `docs/` | `BUILD-LOG.md` (dated build timeline) and `images/` (build photos) |
+| `PRINT-QUEUE.md` | what to print, in what order, which slicer profile. Includes the verified handedness correction (upstream file names are mirrored) |
 | `SHOPPING-LIST.md` / `.csv` | parts, decisions (solder-direct, no hotswap) and what's already bought |
 | `preview-*.html` | three.js viewers: `preview.html` (Charybdis 6-thumb + tenting), `preview-tenting.html` (stand + articulated arm), `preview-full-assembly-magnet.html`, `preview-wiring.html` (wiring sheet), `preview-keymap.html` (keymap) |
-| `tools/` | the dev-cycle toolkit — build → validate → capture. See `tools/README.md` |
+| `tools/` | the dev-cycle toolkit: build → validate → capture. See `tools/README.md` |
 | `tools/tent/` | OpenSCAD sources for the tenting plate / cover / hinge / magnet mount, plus `PRINT-FINDINGS.md` (why the plate must print vertically) |
 | `cosmos/` | OpenSCAD sources + viewers for the earlier Cosmos/Dactyl case and its I/O block |
 | `firmware/` | `flash` (drop a .uf2 on a nice!nano) and `kbstatus` (Bluetooth state on macOS) |
-| `upstream-mods/` | our own sources that live *inside* the gitignored upstream clones — see `upstream-mods/README.md` |
+| `upstream-mods/` | our own sources that live *inside* the gitignored upstream clones, see `upstream-mods/README.md` |
 
 ## Setup
 
@@ -40,7 +68,7 @@ node tools/cycle.mjs <target>    # build → validate → capture → summary
 node tools/capture.mjs <set…>    # headless multi-view PNGs into tools/captures/
 ```
 
-If you edit anything *inside* a clone, run `tools/save-mods.sh` before committing —
+If you edit anything *inside* a clone, run `tools/save-mods.sh` before committing,
 otherwise the change only exists on this machine.
 
 ## Firmware
